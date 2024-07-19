@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "web3eap_backend": {
+      "main": "src/web3eap_backend/main.mo",
+      "type": "motoko"
+    },
+    "web3eap_frontend": {
+      "dependencies": [
+        "web3eap_backend"
+      ],
+      "source": [
+        "src/web3eap_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "web3eap_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

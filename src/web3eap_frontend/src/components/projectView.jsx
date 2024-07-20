@@ -1,23 +1,26 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect } from 'react';
 import { web3eap_backend } from 'declarations/web3eap_backend';
-import { Table, Button, Nav, Row, Col, FloatingLabel, Form, Stack, Modal } from 'react-bootstrap';
-import { BrowserRouter, Routes, Link, Route } from 'react-router-dom';
+import { Table, Button, Nav, Form, Stack, Modal } from 'react-bootstrap';
+import { Link , useNavigate} from 'react-router-dom';
+
+
 
 function projectView() {
+ 
+  const navigate = useNavigate();
 
-  const [update, setUpdate] = useState(false);
+  function linkEap(idProjeto){      
+    window.location.href = '/eapLink/'+idProjeto;
+  }
 
   useEffect( async () => {
     
     let response = await web3eap_backend.getArrayProjetos();   
     setProjetos(response);   
   
-  }, [update]);
-
-  const forceUpdate = () => {
-    setUpdate(prev => !prev);
-  };
+  }, []);
+  
 
   // PROJETO  
   const [showPopupProjeto, setShowPopupProjeto] = useState(false);  
@@ -47,8 +50,7 @@ function projectView() {
   }  
 
   return (
-    <div>  
-      
+    <div>       
       <Stack direction="horizontal" gap={3}>
          <div className="p-2"> <Button variant="outline-primary" onClick={abrirPopupCadastroProjeto} >Adicionar Projeto</Button>{' '}</div>              
          <div className="p-2 ms-auto"><Nav.Link as={Link} to='/eapLink'> <Button variant="outline-primary">Conectar Wallet</Button></Nav.Link></div>
@@ -59,12 +61,8 @@ function projectView() {
 
         <Table striped bordered hover>
           <thead>
-            <th style={{ width: '5%' }} >
-              Ação
-            </th>
-            <th style={{ width: '95%' }}>
-              Nome Projeto
-            </th>            
+            <th style={{ width: '5%' }} >Ação</th>
+            <th style={{ width: '95%' }}>Nome Projeto</th>            
           </thead>
 
           <tbody>
@@ -98,8 +96,8 @@ function projectView() {
                               </div>
 
                               <div className="p-1">
-                              <Nav.Link as={Link} to={'/eapLink/'+linha} ><Button>EAP</Button></Nav.Link>
-                              </div>
+                                <Button onClick={ () => { linkEap(linha) } }>EAP</Button>
+                              </div>                              
                           </Stack>
                       </td>
                       <td>{linha}</td>

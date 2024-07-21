@@ -2,7 +2,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect } from 'react';
 import { web3eap_backend } from 'declarations/web3eap_backend';
 import { Table, Button, Form, Stack, Modal, Nav } from 'react-bootstrap';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 function eapView() { 
   
@@ -14,12 +14,11 @@ function eapView() {
 
   useEffect( async () => {     
     let response = await web3eap_backend.getArrayItensEAP(idProjeto);
-    let eapOrdenada = response[0].sort((a,b) => a.codigo - b.codigo); // funcao para ordenar o array 
+    let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // funcao para ordenar o array 
     setEap(eapOrdenada);    
   }, []);  
   
-  // EAP
-  const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
+   const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
   const [showPopupEditar, setShowPopupEditar] = useState(false);  
   const [eap, setEap] = useState([]);
               
@@ -38,27 +37,46 @@ function eapView() {
   const [dataConclusaoPopup, setDataConclusaoPopup] = useState('');
   const [situacaoPopup, setSituacaoPopup] = useState('');
 
-  async function adicionarItem() {    
+  async function adicionarItem() {        
+    
+    if(codigo == null || codigo.trim()==''){
+      alert("Informe o código");
+    } else if(atividade == null || atividade.trim()==''){
+      alert("Informe a atividade");
+    } else {
 
-    await web3eap_backend.addItemNoArray(idProjeto, codigo, atividade, horas, dataInicio, dataConclusao, situacao);
-    let response = await web3eap_backend.getArrayItensEAP(idProjeto);
+      await web3eap_backend.addItemNoArray(idProjeto, codigo, atividade, horas, dataInicio, dataConclusao, situacao);
+      let response = await web3eap_backend.getArrayItensEAP(idProjeto);
     
-    const eapOrdenada = response[0].sort((a,b) => a.codigo - b.codigo); // funcao para ordenar o array 
-    setEap(eapOrdenada);
-    setShowPopupAdicionar(false);
-    
+      let eapFormatada = formatarEAP(response[0]); 
+
+      setEap(eapFormatada);
+      setShowPopupAdicionar(false);
+
+      setCodigo(''); 
+      setAtividade(''); 
+      setHoras(''); 
+      setDataInicio(''); 
+      setDataConclusao(''); 
+      setSituacao('');
+
+    }    
+        
   } 
 
   async function excluirItem(idExcluir) { 
       await web3eap_backend.excluirItem(idProjeto, idExcluir);
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
 
-      const eapOrdenada = response[0].sort((a,b) => a.codigo - b.codigo); // funcao para ordenar o array 
-      setEap(eapOrdenada);
+      let eapFormatada = formatarEAP(response[0]);       
+      setEap(eapFormatada);
   }
                                    
   async function abrirPopupEditar(idItem, codigo, atividade, horas, dataInicio, dataConclusao, situacao) {
    
+      atividade = atividade.replace(/\./g, '');
+      atividade = atividade.trim();
+
       setShowPopupEditar(true);    
       setIdItemPopup(idItem);
       setCodigoPopup(codigo);
@@ -71,15 +89,68 @@ function eapView() {
   }
 
   async function salvarAlteracao() {        
-    await web3eap_backend.alterarItemEAP(idProjeto, idItemPopup,codigoPopup, atividadePopup, horasPopup, dataInicioPopup, dataConclusaoPopup, situacaoPopup);
-    let response = await web3eap_backend.getArrayItensEAP(idProjeto);
 
-    const eapOrdenada = response[0].sort((a,b) => a.codigo - b.codigo); // funcao para ordenar o array 
-    setEap(eapOrdenada);
-    
-    setShowPopupEditar(false);    
+    if(codigoPopup == null || codigoPopup.trim()==''){
+      alert("Informe o código");
+    } else if(atividadePopup == null || atividadePopup.trim()==''){
+      alert("Informe a atividade");
+    } else {     
+
+      await web3eap_backend.alterarItemEAP(idProjeto, idItemPopup,codigoPopup, atividadePopup, horasPopup, dataInicioPopup, dataConclusaoPopup, situacaoPopup);
+      let response = await web3eap_backend.getArrayItensEAP(idProjeto);
+
+      let eapFormatada = formatarEAP(response[0]);       
+      setEap(eapFormatada);
+      
+      setShowPopupEditar(false);    
+
+      setIdItemPopup('');
+      setCodigoPopup(''); 
+      setAtividadePopup(''); 
+      setHorasPopup(''); 
+      setDataInicioPopup(''); 
+      setDataConclusaoPopup(''); 
+      setSituacaoPopup('');
+
+    }
 
   }        
+
+  function formatarEAP(eapForm){    
+
+    let eapOrdenada = eapForm.sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // funcao para ordenar o array 
+
+      for(let i = 0 ; i < eapOrdenada.length ; i++){
+        eapOrdenada[i].atividade = formatarAtividade(eapOrdenada[i].codigo, eapOrdenada[i].atividade);
+      }
+
+      return eapOrdenada
+  }
+  
+  function formatarAtividade(codigo, at){
+
+    let espacos = '';
+
+    codigo = codigo + '.';
+    let index = codigo.indexOf('.');    
+    let num = codigo.substring(0, index).replace(/\./g, '');
+    
+    if(num>0){
+      espacos = espacos + " . ";
+    }
+
+    let sub = codigo;
+    while(num>0){
+      sub = sub.substring(index+1,sub.length);    
+      index = sub.indexOf('.');          
+      num = sub.substring(0, index).replace(/\./g, '');
+      if(num>0){
+        espacos = espacos + ' . ';
+      }
+
+    }    
+    return espacos + at;
+  }
 
   // EAP
   const handleCodigo = (event) => {
@@ -134,8 +205,8 @@ function eapView() {
 
   const handleClosePopupAdicionar = () => setShowPopupAdicionar(false);  
 
-  async function abrirPopupAdicionar() {   
-    setShowPopupAdicionar(true);        
+  async function abrirPopupAdicionar() {       
+    setShowPopupAdicionar(true);       
   }
 
   return (
@@ -211,7 +282,7 @@ function eapView() {
                           </Stack>
                       </td>
                       <td>{linha.codigo}</td>
-                      <td>{linha.atividade}</td>      
+                      <td><pre>{linha.atividade}</pre></td>      
                       <td>{linha.horas}</td>      
                       <td>{linha.dataInicio}</td>      
                       <td>{linha.dataConclusao}</td>      
@@ -235,12 +306,12 @@ function eapView() {
           <Modal.Body>
             
                 <Form.Group className="mb-3" controlId="codigo">
-                    <Form.Label>Informe o código</Form.Label>
+                    <Form.Label>Informe o código*</Form.Label>
                     <Form.Control type="text"  placeholder="Exemplo 01.00.00.00"  value={codigo} onChange={handleCodigo}  />
                 </Form.Group>                    
             
                 <Form.Group className="mb-3" controlId="Informe a Atividade">
-                    <Form.Label>Informe a Atividade</Form.Label>
+                    <Form.Label>Informe a Atividade*</Form.Label>
                     <Form.Control type="text"  placeholder=""  value={atividade} onChange={handleAtividade}  />
                 </Form.Group>                
                 
@@ -286,11 +357,11 @@ function eapView() {
             <Form>
 
               <Form.Group className="mb-3" controlId="popup.codigo">
-                <Form.Label>Código</Form.Label>
+                <Form.Label>Código*</Form.Label>
                 <Form.Control value={codigoPopup} onChange={handleCodigoPopup} type="text" placeholder="" autoFocus />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.atividade">
-                <Form.Label>Atividade</Form.Label>
+                <Form.Label>Atividade*</Form.Label>
                 <Form.Control value={atividadePopup} onChange={handleAtividadePopup} type="text" />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.horas">

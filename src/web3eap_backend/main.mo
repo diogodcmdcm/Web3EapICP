@@ -6,6 +6,7 @@ import Text "mo:base/Text";
 
 actor {
 
+  //estrutura da EAP
   type ItemEAP = {
     id : Int;
     codigo: Text;
@@ -19,7 +20,7 @@ actor {
   var mapProjetos : HashMap.HashMap<Text, [ItemEAP]> = HashMap.HashMap<Text, [ItemEAP]>(32, Text.equal, Text.hash);
   var identificador: Int = 1;
 
-  // Método para adicionar um novo projeto no MAP
+  // Método utilizado para adicionar um novo projeto no MAP
   public func cadastrarProjeto(nome: Text) : async () {      
 
       identificador := identificador + 1;    
@@ -29,7 +30,7 @@ actor {
 
   };
 
-  // Método para retornar o array completo de projetos
+  // Método utilizado para retornar o array completo de projetos
   public query func getArrayProjetos() : async [Text] {
 
     var nomesProjetos: [Text] = [];
@@ -42,7 +43,7 @@ actor {
   };
 
 
-  // Método para adicionar um item no array da EAP
+  // Método utilizado para adicionar um item no array da EAP
   public func addItemNoArray(idProjeto: Text, cod: Text, ati: Text, hr: Text, di: Text, dc: Text, sit: Text) : async () {  
 
       var arrayEAP : ?[ItemEAP] = mapProjetos.get(idProjeto);
@@ -61,7 +62,7 @@ actor {
     
   };
 
-  // Método para alterar um item da EAP
+  // Método utilizado para alterar um item da EAP
   public func alterarItemEAP(idProjeto: Text, idAlt: Int, cod: Text, ati: Text, hr: Text, di: Text, dc: Text, sit: Text) : async () {  
     
     var arrayEAP : ?[ItemEAP] = mapProjetos.get(idProjeto);
@@ -81,6 +82,7 @@ actor {
     
   };
   
+  // Método utilizado para excluir um item da EAP
   public func excluirItem(idProjeto: Text, id: Int) : async () {      
     
     var arrayEAP : ?[ItemEAP] = mapProjetos.get(idProjeto);
@@ -95,7 +97,7 @@ actor {
 
   };
 
-    // Método para retornar o array completo de pessoas
+  // Método utilizado para retornar o array completo da EAP de um projeto
   public query func getArrayItensEAP(idProjeto: Text) : async ?[ItemEAP] {
 
     var arrayEAP : ?[ItemEAP] = mapProjetos.get(idProjeto);

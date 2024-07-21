@@ -4,8 +4,6 @@ import { web3eap_backend } from 'declarations/web3eap_backend';
 import { Table, Button, Nav, Form, Stack, Modal } from 'react-bootstrap';
 import { Link , useNavigate} from 'react-router-dom';
 
-
-
 function projectView() {
  
   const navigate = useNavigate();
@@ -21,14 +19,10 @@ function projectView() {
   
   }, []);
   
-
-  // PROJETO  
   const [showPopupProjeto, setShowPopupProjeto] = useState(false);  
   const [nomeProjetoPopup, setNomeProjetoPopup] = useState('');
   const [projetos, setProjetos] = useState([]);
   
-  // PROJETO  
-
   const handleClosePopupCadastrarProjeto = () => setShowPopupProjeto(false);  
 
   const handleNomeProjetoPopup = (event) => {
@@ -41,9 +35,8 @@ function projectView() {
     let response = await web3eap_backend.getArrayProjetos();   
     setProjetos(response);    
     setShowPopupProjeto(false);    
+
   }   
-    
-  // PROJETO 
 
   async function abrirPopupCadastroProjeto() {   
     setShowPopupProjeto(true);    

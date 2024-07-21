@@ -13,9 +13,10 @@ Para executar o projeto utilizar o comando dfx deploy ou dfx deploy --playground
 
 O protótipo ainda exige muitas melhorias e devido a isso é necessário se atentar a estrutura de códigos que será utilizada na EAP, abaixo segue um exemplo de estrutura aderente a situação atual:
 
-    __________________________________
+
+    
    | Código       | Atividade         |         
-   ___________________________________
+   |--------------|-------------------|   
    | 01.00.00.00  | Grupo 1           |
    | 01.01.00.00  | SubGrupo 1        |
    | 01.01.01.00  | SubGrupo 1.2      |
@@ -25,4 +26,4 @@ O protótipo ainda exige muitas melhorias e devido a isso é necessário se aten
    | 02.01.01.00  | Atividade 2.1     |
    | 03.00.00.00  | Grupo 3           |
    | 03.01.00.00  | Atividade 3.1     |
-   -----------------------------------
+   

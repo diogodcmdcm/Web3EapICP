@@ -1,8 +1,9 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect } from 'react';
 import { web3eap_backend } from 'declarations/web3eap_backend';
-import { Table, Button, Form, Stack, Modal, Nav } from 'react-bootstrap';
+import { Table, Button, Form, Stack, Modal, Navbar, Nav, Badge, Card, Container, Spinner } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
+import moment from 'moment';
 
 function eapView() { 
   
@@ -12,14 +13,37 @@ function eapView() {
     window.location.href = '/';
   }
 
+  function paginaEAP(){
+    window.location.href = '/eapLink/'+idProjeto;     
+  }
+
+  function paginaEquipe(){
+    window.location.href = '/equipeLink/'+idProjeto;     
+  }
+
+  function paginaAgenda(){
+    window.location.href = '/agendaLink/'+idProjeto;     
+  }  
+
+  function paginaCalendarioProjeto(){
+    window.location.href = '/calendarioProjetoLink/'+idProjeto;     
+  }
+  
+  function paginaCalendarioEquipe(){
+    window.location.href = '/calendarioEquipeLink/'+idProjeto;     
+  }  
+
   useEffect( async () => {     
+    setExibeCarregando(true);
     let response = await web3eap_backend.getArrayItensEAP(idProjeto);
     let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // funcao para ordenar o array 
-    setEap(eapOrdenada);    
+    setEap(eapOrdenada);   
+    setExibeCarregando(false); 
   }, []);  
   
-   const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
+  const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
   const [showPopupEditar, setShowPopupEditar] = useState(false);  
+  
   const [eap, setEap] = useState([]);
               
   const [codigo, setCodigo] = useState('');
@@ -37,6 +61,10 @@ function eapView() {
   const [dataConclusaoPopup, setDataConclusaoPopup] = useState('');
   const [situacaoPopup, setSituacaoPopup] = useState('');
 
+  const [exibeCarregando, setExibeCarregando] = useState(false);
+  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false);  
+  const [idExcluir, setIdExcluir] = useState(null);  
+
   async function adicionarItem() {        
     
     if(codigo == null || codigo.trim()==''){
@@ -45,13 +73,14 @@ function eapView() {
       alert("Informe a atividade");
     } else {
 
+      setExibeCarregando(true);
+      setShowPopupAdicionar(false);
       await web3eap_backend.addItemNoArray(idProjeto, codigo, atividade, horas, dataInicio, dataConclusao, situacao);
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
     
       let eapFormatada = formatarEAP(response[0]); 
 
-      setEap(eapFormatada);
-      setShowPopupAdicionar(false);
+      setEap(eapFormatada);      
 
       setCodigo(''); 
       setAtividade(''); 
@@ -59,17 +88,33 @@ function eapView() {
       setDataInicio(''); 
       setDataConclusao(''); 
       setSituacao('');
+      setExibeCarregando(false);
 
     }    
         
   } 
 
-  async function excluirItem(idExcluir) { 
+  async function excluirItem() { 
+      
+      setExibeCarregando(true);
+
       await web3eap_backend.excluirItem(idProjeto, idExcluir);
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
-
+      setIdExcluir(null);
       let eapFormatada = formatarEAP(response[0]);       
       setEap(eapFormatada);
+
+      setExibeCarregando(false);
+  }
+
+  function exibirMensagemExcluir(id){
+    setExibirMensagemExclusao(true);
+    setIdExcluir(id);
+  }
+
+  function confirmarExclusao(){
+    setExibirMensagemExclusao(false);    
+    excluirItem();
   }
                                    
   async function abrirPopupEditar(idItem, codigo, atividade, horas, dataInicio, dataConclusao, situacao) {
@@ -96,13 +141,13 @@ function eapView() {
       alert("Informe a atividade");
     } else {     
 
+      setShowPopupEditar(false);    
+      setExibeCarregando(true);
       await web3eap_backend.alterarItemEAP(idProjeto, idItemPopup,codigoPopup, atividadePopup, horasPopup, dataInicioPopup, dataConclusaoPopup, situacaoPopup);
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
 
       let eapFormatada = formatarEAP(response[0]);       
-      setEap(eapFormatada);
-      
-      setShowPopupEditar(false);    
+      setEap(eapFormatada);    
 
       setIdItemPopup('');
       setCodigoPopup(''); 
@@ -111,6 +156,7 @@ function eapView() {
       setDataInicioPopup(''); 
       setDataConclusaoPopup(''); 
       setSituacaoPopup('');
+      setExibeCarregando(false);
 
     }
 
@@ -210,20 +256,32 @@ function eapView() {
   }
 
   return (
-    <div>            
-        <div>
-            <Stack direction="horizontal" gap={3}>              
-              <div className="p-2"> <Button onClick={paginaInicial} variant="outline-primary">Início</Button>{' '}</div>              
-              <div className="p-2"> <Button onClick={paginaInicial} variant="outline-primary">Consultar Projetos</Button>{' '}</div>              
-              <div className="p-2 ms-auto"><Button variant="outline-primary">Conectar Wallet</Button>{' '}</div>
-            </Stack>
-            <br/>
-            <div>
-              <h1>Projeto: {idProjeto}</h1>
-            </div>           
-        </div>        
-
-      <br/>
+    <div>           
+        <Navbar expand="lg" className="bg-body-tertiary">
+          <Container fluid>
+            <Navbar.Collapse id="navbarScroll">              
+              <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll >
+                <Nav.Link  href="/">Lista de Projetos</Nav.Link>                                
+                <Nav.Link>|</Nav.Link>                                
+                <Nav.Link  href={'/eapLink/'+idProjeto} >EAP do Projeto</Nav.Link>                                        
+                <Nav.Link>|</Nav.Link>
+                <Nav.Link  href={'/equipeLink/'+idProjeto} >Equipe do Projeto</Nav.Link>                                        
+                <Nav.Link>|</Nav.Link>
+                <Nav.Link  href={'/agendaLink/'+idProjeto} >Agenda da Equipe</Nav.Link>                
+                <Nav.Link>|</Nav.Link>
+                <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto} >Calendário da Equipe</Nav.Link>                
+                <Nav.Link>|</Nav.Link>
+                <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
+              </Nav>              
+              <Button variant="light">Sair</Button>
+            </Navbar.Collapse>
+          </Container>
+        </Navbar>
+         
+      <Card>
+        <Card.Body>{idProjeto} / EAP do Projeto</Card.Body>
+      </Card>  
+        
       <section id="eap">
         <Table striped bordered hover>
           <thead>
@@ -244,7 +302,7 @@ function eapView() {
                           <Stack direction="horizontal" gap={0}>   
 
                           { (linha.codigo == '') && <div className="p-1">
-                                  <Button onClick={ () => { abrirPopupAdicionar() } } >
+                                  <Button onClick={ () => { abrirPopupAdicionar() } }  variant="outline-secondary" >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-plus">
                                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                       <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
@@ -256,7 +314,7 @@ function eapView() {
                           }      
 
                           { (linha.codigo != '') && <div className="p-1">
-                                  <Button onClick={ () => { excluirItem(linha.id) } } >
+                                  <Button onClick={ () => { exibirMensagemExcluir(linha.id) } }  variant="outline-secondary" >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
                                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                       <path d="M4 7l16 0" />
@@ -269,7 +327,7 @@ function eapView() {
                               </div>
                           }
                           { (linha.codigo != '') &&  <div className="p-1">
-                                <Button onClick={ () => { abrirPopupEditar(linha.id, linha.codigo, linha.atividade, linha.horas, linha.dataInicio, linha.dataConclusao, linha.situacao ) } } >
+                                <Button onClick={ () => { abrirPopupEditar(linha.id, linha.codigo, linha.atividade, linha.horas, linha.dataInicio, linha.dataConclusao, linha.situacao ) } }  variant="outline-secondary" >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-pencil" >
                                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                       <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
@@ -284,13 +342,13 @@ function eapView() {
                       <td>{linha.codigo}</td>
                       <td><pre>{linha.atividade}</pre></td>      
                       <td>{linha.horas}</td>      
-                      <td>{linha.dataInicio}</td>      
-                      <td>{linha.dataConclusao}</td>      
+                      <td>{linha.dataInicio ? moment(linha.dataInicio).format('DD/MM/YYYY') : '' }</td>      
+                      <td>{linha.dataConclusao ? moment(linha.dataConclusao).format('DD/MM/YYYY') : '' }</td>      
                       <td>
-                          { linha.situacao=='1'?'Aguardando Inicio':''}
-                          { linha.situacao=='2'?'Em Execusão':''}
-                          { linha.situacao=='3'?'Paralizada':''}
-                          { linha.situacao=='4'?'Concluída':''}                          
+                          { linha.situacao=='1'? <Badge bg="warning" text="dark">Aguardando Inicio</Badge> :''}
+                          { linha.situacao=='2'? <Badge bg="primary">Em Execusão</Badge>:''}
+                          { linha.situacao=='3'? <Badge bg="danger">Paralizada</Badge> :''}       
+                          { linha.situacao=='4'? <Badge bg="success">Concluída</Badge>:''}     
                       </td>                                                                    
                   </tr>
               )
@@ -306,33 +364,33 @@ function eapView() {
           <Modal.Body>
             
                 <Form.Group className="mb-3" controlId="codigo">
-                    <Form.Label>Informe o código*</Form.Label>
-                    <Form.Control type="text"  placeholder="Exemplo 01.00.00.00"  value={codigo} onChange={handleCodigo}  />
+                    <Form.Label >Informe o código*</Form.Label>
+                    <Form.Control type="text" size="sm" placeholder="Exemplo 01.00.00.00"  value={codigo} onChange={handleCodigo}  />
                 </Form.Group>                    
             
-                <Form.Group className="mb-3" controlId="Informe a Atividade">
-                    <Form.Label>Informe a Atividade*</Form.Label>
-                    <Form.Control type="text"  placeholder=""  value={atividade} onChange={handleAtividade}  />
+                <Form.Group className="mb-3" controlId="atividade">
+                    <Form.Label >Informe a Atividade*</Form.Label>
+                    <Form.Control type="text" size="sm" placeholder=""  value={atividade} onChange={handleAtividade}  />
                 </Form.Group>                
                 
                 <Form.Group className="mb-3" controlId="horas">
-                    <Form.Label>Informe as Horas</Form.Label>
-                    <Form.Control type="text"  placeholder=""  value={horas} onChange={handleHoras} />
+                    <Form.Label >Informe as Horas</Form.Label>
+                    <Form.Control type="text" size="sm" placeholder=""  value={horas} onChange={handleHoras} />
                 </Form.Group>
             
                 <Form.Group className="mb-3" controlId="dataInicio">
-                    <Form.Label>Informe a Data de Início</Form.Label>
-                    <Form.Control type="date"  placeholder=""  value={dataInicio} onChange={handleDataInicio} />
+                    <Form.Label >Informe a Data de Início</Form.Label>
+                    <Form.Control type="date" size="sm" placeholder=""  value={dataInicio} onChange={handleDataInicio} />
                 </Form.Group>
                 
                 <Form.Group className="mb-3" controlId="dataConclusao">
-                    <Form.Label>Informe a Data de Conclusão</Form.Label>
-                    <Form.Control type="date"  placeholder=""  value={dataConclusao} onChange={handleDataConclusao} />
+                    <Form.Label >Informe a Data de Conclusão</Form.Label>
+                    <Form.Control type="date" size="sm"  placeholder=""  value={dataConclusao} onChange={handleDataConclusao} />
                 </Form.Group>                
                                                                     
                 <Form.Group className="mb-3" controlId="situacao">
-                  <Form.Label>Informe a situação da atividade</Form.Label>
-                  <Form.Select aria-label="Selecione" value={situacao} onChange={handleSituacao} >
+                  <Form.Label >Informe a situação da atividade</Form.Label>
+                  <Form.Select aria-label="Selecione" size="sm" value={situacao} onChange={handleSituacao} >
                     <option>Selecione</option>                  
                     <option value="1">Aguardando Inicio</option>
                     <option value="2">Em Execusão</option>
@@ -344,7 +402,7 @@ function eapView() {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleClosePopupAdicionar}>Cancelar</Button>
-            <Button variant="primary" onClick={adicionarItem} >Salvar Alterações</Button>
+            <Button variant="primary" onClick={adicionarItem} >Salvar</Button>
           </Modal.Footer>
       </Modal>        
 
@@ -358,27 +416,27 @@ function eapView() {
 
               <Form.Group className="mb-3" controlId="popup.codigo">
                 <Form.Label>Código*</Form.Label>
-                <Form.Control value={codigoPopup} onChange={handleCodigoPopup} type="text" placeholder="" autoFocus />
+                <Form.Control value={codigoPopup} onChange={handleCodigoPopup} type="text" size="sm" placeholder="" autoFocus />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.atividade">
                 <Form.Label>Atividade*</Form.Label>
-                <Form.Control value={atividadePopup} onChange={handleAtividadePopup} type="text" />
+                <Form.Control value={atividadePopup} onChange={handleAtividadePopup} type="text" size="sm" />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.horas">
                 <Form.Label>Horas</Form.Label>
-                <Form.Control value={horasPopup} type="text" onChange={handleHorasPopup}  placeholder=""  defaultValue=""  />
+                <Form.Control value={horasPopup} type="text" onChange={handleHorasPopup}  size="sm" placeholder=""  defaultValue=""  />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.dataInicio">
                 <Form.Label>Data de Início</Form.Label>
-                <Form.Control value={dataInicioPopup} type="date" onChange={handleDataInicioPopup} placeholder=""  defaultValue=""  />
+                <Form.Control value={dataInicioPopup} type="date" onChange={handleDataInicioPopup} size="sm" placeholder=""  defaultValue=""  />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.dataConclusao">
                 <Form.Label>Data de Conclusão</Form.Label>
-                <Form.Control value={dataConclusaoPopup} type="date" onChange={handleDataConclusaoPopup} placeholder=""  defaultValue=""  />
+                <Form.Control value={dataConclusaoPopup} type="date" onChange={handleDataConclusaoPopup} size="sm" placeholder=""  defaultValue=""  />
               </Form.Group>
               <Form.Group className="mb-3" controlId="popup.atividade">
                 <Form.Label>Situação</Form.Label>
-                <Form.Select value={situacaoPopup} onChange={handleSituacaoPopup} aria-label="Selecione">
+                <Form.Select size="sm" value={situacaoPopup} onChange={handleSituacaoPopup} aria-label="Selecione">
                   <option>Selecione</option>                  
                   <option value="1">Aguardando Inicio</option>
                   <option value="2">Em Execusão</option>
@@ -398,6 +456,27 @@ function eapView() {
             </Button>
           </Modal.Footer>
       </Modal>        
+
+      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} aria-labelledby="" >        
+        <Modal.Body>
+          <Spinner animation="border" role="status"></Spinner>&nbsp;<span >Por favor aguarde, processando!</span>       
+        </Modal.Body>
+      </Modal>
+
+      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} animation={false}>
+        <Modal.Header closeButton>
+          <Modal.Title>Excluir</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Você tem certeza que deseja excluir este item?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={ () => { setExibirMensagemExclusao(false) } }>
+            Fechar
+          </Button>
+          <Button variant="primary" onClick={ () => {confirmarExclusao()} }>
+            Confirmar
+          </Button>
+        </Modal.Footer>
+      </Modal>
       
       </section>
     </div>

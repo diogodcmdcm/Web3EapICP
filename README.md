@@ -8,6 +8,9 @@ Dependências:
 
         npm install react-bootstrap bootstrap
         npm install react-router-dom
+        npm install @dfinity/auth-client
+        npm install moment --save
+        npm install react-big-calendar
 
 Para executar o projeto utilizar o comando dfx deploy ou dfx deploy --playground
 

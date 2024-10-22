@@ -5,13 +5,15 @@ import { Modal, Spinner } from 'react-bootstrap';
 
 function login() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [principal, setPrincipal] = useState(null);
+  const [identidade, setIdentidade] = useState(null);
 
   function redirecionaPaginaInicial(){
     window.location.href = '/projectLink/';   
   }
 
   useEffect(() => {
+
+    // função utilizada para verificar se o usuário está autenticado na rede da ICP 
     async function initAuth() {
       const authClient = await AuthClient.create();
 
@@ -19,10 +21,11 @@ function login() {
       const authenticated = await authClient.isAuthenticated();
       if (authenticated) {
         const identity = authClient.getIdentity();
-        setPrincipal(identity.getPrincipal().toText());
+        setIdentidade(identity.getPrincipal().toText());
         setIsAuthenticated(true);
         redirecionaPaginaInicial();  
       } else {
+        // caso o usuário não estiver autenticado na rede da ICP
         handleLogin();
       }
 
@@ -31,15 +34,15 @@ function login() {
     initAuth();
   }, []);
 
-  async function handleLogin(){
+    async function handleLogin(){
     const authClient = await AuthClient.create();
     
-    // Redireciona para o provedor de identidade (Internet Identity)
+    // Redireciona para o provedor de identidade da ICP (Internet Identity)
     authClient.login({
       identityProvider: "https://identity.ic0.app/#authorize",
       onSuccess: async () => {
         const identity = authClient.getIdentity();
-        setPrincipal(identity.getPrincipal().toText());
+        setIdentidade(identity.getPrincipal().toText());
         setIsAuthenticated(true);
         redirecionaPaginaInicial();
       },

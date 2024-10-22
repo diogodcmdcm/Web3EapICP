@@ -15,57 +15,32 @@ function calendarioProjetoView() {
 
   const { idProjeto } = useParams(); 
 
-  const [events, setEvents] = React.useState([]);
-
-  //const [calevents, setCalEvents] = React.useState<any>(Events);
-  const [calevents, setCalEvents] = React.useState([]);
+  //constantes utilizadas para configuração do componente do calendario
+  const [events, setEvents] = React.useState([]);    
   const [open, setOpen] = React.useState(false);
-  const [title, setTitle] = React.useState('');
-  //const [slot, setSlot] = React.useState<EvType>();
-  const [slot, setSlot] = React.useState();
+  const [title, setTitle] = React.useState('');    
   const [start, setStart] = React.useState();
-  const [end, setEnd] = React.useState();
-  const [color, setColor] = React.useState('default');
-  //const [update, setUpdate] = React.useState<EvType | undefined | any>();
-  const [update, setUpdate] = React.useState();
-  const [view, setView] = React.useState('month'); // Definindo a visão padrão como 'semana'
-  
-  const addNewEventAlert = (slotInfo) => {
-    //setOpen(true);
-    //setSlot(slotInfo);
-    //setStart(slotInfo.start);
-    //setEnd(slotInfo.end);
-  };
-
+  const [end, setEnd] = React.useState();  
+  const [view, setView] = React.useState('month'); // Definindo a visão padrão como 'mês'
+ 
+  // Constante utilizada para apresentar os detalhes de uma data
   const editEvent = (event) => {
-    setOpen(true);
-        
-    const newEditEvent = events.find((elem) => elem.title === event.title);    
-    
+    setOpen(true);        
+    const newEditEvent = events.find((elem) => elem.title === event.title);        
     setTitle(newEditEvent.title);    
     setStart(moment(newEditEvent.start).format('DD/MM/YYYY'));
-    setEnd(moment(newEditEvent.end).format('DD/MM/YYYY'));
-    
-    //setUpdate(event);
-    
-    
+    setEnd(moment(newEditEvent.end).format('DD/MM/YYYY'));    
   };  
 
-  const handleClose = () => {
-    // eslint-disable-line newline-before-return
-    
-    setOpen(false);
-    /*
-    setTitle('');
-    setStart(new Date());
-    setEnd(new Date());
-    setUpdate(null);*/
+  const handleClose = () => {    
+    setOpen(false);    
   };
     
   useEffect( () => {     
 
     const carregarCalendario = async () => {
       
+      // busca os itens da EAP para obter as informações que serão necessárias renderizar no calendario
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
     
       let calendarioEvents = [];
@@ -146,10 +121,7 @@ function calendarioProjetoView() {
             onSelectEvent={(event) => editEvent(event)}            
             showMultiDayTimes            
           />
-
-      {/* ------------------------------------------- */}
-      {/* Add Calendar Event Dialog */}
-      {/* ------------------------------------------- */}
+      
       <Modal show={open} onHide={handleClose} >
         
           <Modal.Body>            

@@ -6,30 +6,34 @@ import { useParams } from 'react-router-dom';
 
 function equipeView() { 
   
-  const { idProjeto } = useParams(); 
+  const { idProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
   
   useEffect( async () => {     
-    setExibeCarregando(true);
+    setExibeCarregando(true); // exibe mensagem carregando enquanto o sistema obtem a lista de equipe no backend
+    //chamada para o backend para buscar as pessoas já cadastradas
     let response = await web3eap_backend.getArrayEquipe(idProjeto);    
     setEquipe(response[0]);    
     setExibeCarregando(false);
   }, []);  
   
-  const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
-  const [showPopupEditar, setShowPopupEditar] = useState(false);  
-  const [equipe, setEquipe] = useState([]);
+  const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  // constante utilizada para apresentar a popup de cadastro de equipe
+  const [showPopupEditar, setShowPopupEditar] = useState(false);  // constante utilizada para apresentar a popup de alteração de equipe
+  const [equipe, setEquipe] = useState([]); // constante utilizada para armazenar os itens da EAP que são apresentados na tela 
               
+  //Constantes utilizadas na popup que será apresentada para cadastro de novas pessoas 
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState('');
   
+  //Constantes utilizadas na popup que será apresentada para edição de novas pessoas 
   const [idItemPopup, setIdItemPopup] = useState('');
   const [nomePopup, setNomePopup] = useState('');
   const [cargoPopup, setCargoPopup] = useState('');
   
-  const [exibeCarregando, setExibeCarregando] = useState(false);
-  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false); 
-  const [idExcluir, setIdExcluir] = useState(null); 
+  const [exibeCarregando, setExibeCarregando] = useState(false); // constante utilizada para apresentar modal com mensagem de carregamento da página
+  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false);  // constante utilizada para apresentar modal com mensagem de confirmação de exclusão de item
+  const [idExcluir, setIdExcluir] = useState(null);  // constante utilizada para guardar o id do item selecionado para exclusão.
 
+  //Função utilizada para adicionar uma nova pessoa na equipe
   async function adicionarItem() {        
     
     if(nome == null || nome.trim()==''){
@@ -39,16 +43,23 @@ function equipeView() {
     } else {
       setShowPopupAdicionar(false);
       setExibeCarregando(true);
+      //chamada para o backend para adicionar a nova pessoa
       await web3eap_backend.addEquipe(idProjeto, nome, cargo);
+      //chamada para o backend, serão retornadas as pessoas cadastradas 
       let response = await web3eap_backend.getArrayEquipe(idProjeto);
-      setEquipe(response[0]);
-      setNome(''); 
-      setCargo('');       
-      setExibeCarregando(false);
+      limparCampos();
     }    
         
   } 
 
+  function limparCampos(){
+    setEquipe(response[0]);
+    setNome(''); 
+    setCargo('');       
+    setExibeCarregando(false);
+  }
+
+  // função utilizada para excluir um pessoa 
   async function excluirItem() { 
       setExibeCarregando(true);
       await web3eap_backend.excluirEquipe(idProjeto, idExcluir);
@@ -57,16 +68,19 @@ function equipeView() {
       setExibeCarregando(false);
   }
 
+  // função utilizada para apresentar mensagem de confirmação de exclusão de um item
   function exibirMensagemExcluir(id){
     setExibirMensagemExclusao(true);
     setIdExcluir(id);
   }
 
+  // função para confirmar a exclusão de um item
   function confirmarExclusao(){
     setExibirMensagemExclusao(false);    
     excluirItem();
   }
-                                   
+               
+  // função utilizada para apresentar a popup para edição de uma pessoa
   async function abrirPopupEditar(idItem, nome, cargo) {
       setShowPopupEditar(true);    
       setIdItemPopup(idItem);
@@ -74,6 +88,7 @@ function equipeView() {
       setCargoPopup(cargo);
   }
 
+  // função utilizada para registrar a alteração realizada em uma pessoa
   async function salvarAlteracao() {        
 
     if(nomePopup == null || nomePopup.trim()==''){
@@ -85,8 +100,7 @@ function equipeView() {
       setExibeCarregando(true);
       await web3eap_backend.alterarEquipe(idProjeto, idItemPopup,nomePopup, cargoPopup);
       let response = await web3eap_backend.getArrayEquipe(idProjeto);
-      setEquipe(response[0]);      
-      
+      setEquipe(response[0]);            
       setIdItemPopup('');
       setNomePopup(''); 
       setCargoPopup(''); 
@@ -95,7 +109,6 @@ function equipeView() {
 
   }        
 
-  // EAP
   const handleNome = (event) => {
     setNome(event.target.value);
   };

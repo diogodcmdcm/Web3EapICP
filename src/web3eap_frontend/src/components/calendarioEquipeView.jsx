@@ -15,31 +15,17 @@ function calendarioEquipeView() {
 
   const { idProjeto } = useParams(); 
   
-  const [events, setEvents] = React.useState([]);
-
-  //const [calevents, setCalEvents] = React.useState<any>(Events);
-  const [calevents, setCalEvents] = React.useState([]);
+  //constantes utilizadas para configuração do componente do calendario
+  const [events, setEvents] = React.useState([]);  
   const [open, setOpen] = React.useState(false);
-  const [title, setTitle] = React.useState('');
-  //const [slot, setSlot] = React.useState<EvType>();
-  const [slot, setSlot] = React.useState();
+  const [title, setTitle] = React.useState('');  
   const [start, setStart] = React.useState();
-  const [end, setEnd] = React.useState();
-  const [color, setColor] = React.useState('default');
-  //const [update, setUpdate] = React.useState<EvType | undefined | any>();
-  const [update, setUpdate] = React.useState();
-  const [view, setView] = React.useState('month'); // Definindo a visão padrão como 'semana'
-  
+  const [end, setEnd] = React.useState();  
+  const [view, setView] = React.useState('month'); // Definindo a visão padrão como 'mês'  
   const [horaInicio, setHoraInicio] = React.useState();
   const [horaConclusao, setHoraConclusao] = React.useState();
   
-  const addNewEventAlert = (slotInfo) => {
-    //setOpen(true);
-    //setSlot(slotInfo);
-    //setStart(slotInfo.start);
-    //setEnd(slotInfo.end);
-  };
-
+  // Constante utilizada para apresentar os detalhes de uma data
   const editEvent = (event) => {
     setOpen(true);
         
@@ -52,21 +38,15 @@ function calendarioEquipeView() {
     
   };  
 
-  const handleClose = () => {
-    // eslint-disable-line newline-before-return
-    setOpen(false);
-    /*
-    setTitle('');
-    setStart(new Date());
-    setEnd(new Date());
-    setUpdate(null);
-    */
+  const handleClose = () => {    
+    setOpen(false);    
   };  
   
   useEffect(() => {     
 
     const carregarCalendario = async () => {
       
+      // busca as agendas para obter as informações que serão necessárias renderizar no calendario
       let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);    
       let calendarioEvents = [];
 
@@ -140,9 +120,6 @@ function calendarioEquipeView() {
             step={60}
           />
 
-      {/* ------------------------------------------- */}
-      {/* Add Calendar Event Dialog */}
-      {/* ------------------------------------------- */}
       <Modal show={open} onHide={handleClose} >
         
           <Modal.Body>            

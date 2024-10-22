@@ -7,45 +7,23 @@ import moment from 'moment';
 
 function eapView() { 
   
-  const { idProjeto } = useParams(); 
-  
-  function paginaInicial(){
-    window.location.href = '/';
-  }
+  const { idProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
 
-  function paginaEAP(){
-    window.location.href = '/eapLink/'+idProjeto;     
-  }
-
-  function paginaEquipe(){
-    window.location.href = '/equipeLink/'+idProjeto;     
-  }
-
-  function paginaAgenda(){
-    window.location.href = '/agendaLink/'+idProjeto;     
-  }  
-
-  function paginaCalendarioProjeto(){
-    window.location.href = '/calendarioProjetoLink/'+idProjeto;     
-  }
-  
-  function paginaCalendarioEquipe(){
-    window.location.href = '/calendarioEquipeLink/'+idProjeto;     
-  }  
-
-  useEffect( async () => {     
-    setExibeCarregando(true);
+  useEffect( async () => {   
+    setExibeCarregando(true); // exibe mensagem carregando enquanto o sistema obtem a lista da EAP no backend
+    //chamada para o backend para buscar os itens da EAP já cadastrados
     let response = await web3eap_backend.getArrayItensEAP(idProjeto);
-    let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // funcao para ordenar o array 
+    let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // função para ordenar o array 
     setEap(eapOrdenada);   
     setExibeCarregando(false); 
   }, []);  
   
-  const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
-  const [showPopupEditar, setShowPopupEditar] = useState(false);  
+  const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  // constante utilizada para apresentar a popup de cadastro de item da EAP
+  const [showPopupEditar, setShowPopupEditar] = useState(false);        // constante utilizada para apresentar a popup de alteração de item da EAP
   
-  const [eap, setEap] = useState([]);
+  const [eap, setEap] = useState([]); // constante utilizada para armazenar os itens da EAP que são apresentados na tela 
               
+  //Constantes utilizadas na popup que será apresentada para cadastro de novos itens da EAP 
   const [codigo, setCodigo] = useState('');
   const [atividade, setAtividade] = useState('');
   const [horas, setHoras] = useState('');
@@ -53,6 +31,7 @@ function eapView() {
   const [dataConclusao, setDataConclusao] = useState('');
   const [situacao, setSituacao] = useState('');
 
+  //Constantes utilizadas na popup que será apresentada para editar itens da EAP 
   const [idItemPopup, setIdItemPopup] = useState('');
   const [codigoPopup, setCodigoPopup] = useState('');
   const [atividadePopup, setAtividadePopup] = useState('');
@@ -61,62 +40,90 @@ function eapView() {
   const [dataConclusaoPopup, setDataConclusaoPopup] = useState('');
   const [situacaoPopup, setSituacaoPopup] = useState('');
 
-  const [exibeCarregando, setExibeCarregando] = useState(false);
-  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false);  
-  const [idExcluir, setIdExcluir] = useState(null);  
+  const [exibeCarregando, setExibeCarregando] = useState(false); // constante utilizada para apresentar modal com mensagem de carregamento da página
+  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false);  // constante utilizada para apresentar modal com mensagem de confirmação de exclusão de item
+  const [idExcluir, setIdExcluir] = useState(null);  // constante utilizada para guardar o id do item selecionado para exclusão.
 
+  const [exibirMensagemAlerta, setExibirMensagemAlerta] = useState(false);
+  const [mensagemAlerta, setMensagemAlerta] = useState(false);
+  
+  //Função utilizada para adicionar um novo item na lista da EAP
   async function adicionarItem() {        
     
-    if(codigo == null || codigo.trim()==''){
-      alert("Informe o código");
+    if(codigo == null || codigo.trim()==''){            
+      setMensagemAlerta("É obrigatório informar o código");
+      setExibirMensagemAlerta(true);
     } else if(atividade == null || atividade.trim()==''){
-      alert("Informe a atividade");
+      setMensagemAlerta("É obrigatório informar a atividade");
+      setExibirMensagemAlerta(true);
     } else {
 
       setExibeCarregando(true);
       setShowPopupAdicionar(false);
+      //chamada para o backend para adicionar o item na EAP do projeto
       await web3eap_backend.addItemNoArray(idProjeto, codigo, atividade, horas, dataInicio, dataConclusao, situacao);
+      //chamada para o backend, serão retornados os itens da EAP 
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
     
+      //chamada para função que irá formatar a lista da EAP (organizar por código e adicionar . para expressar a hierarquia)
       let eapFormatada = formatarEAP(response[0]); 
 
+      // atualizar a EAP apresentada na tela
       setEap(eapFormatada);      
-
-      setCodigo(''); 
-      setAtividade(''); 
-      setHoras(''); 
-      setDataInicio(''); 
-      setDataConclusao(''); 
-      setSituacao('');
+      
+      //limpa os campos para preparar a tela para um novo cadastro
+      limparCamposPopupCadastro();
       setExibeCarregando(false);
 
     }    
         
   } 
 
+  //função utilizada para limpar os campos da popup utilizada para cadastrar novo itens na EAP
+  function limparCamposPopupCadastro(){
+    setCodigo(''); 
+    setAtividade(''); 
+    setHoras(''); 
+    setDataInicio(''); 
+    setDataConclusao(''); 
+    setSituacao('');
+
+    setIdItemPopup('');
+    setCodigoPopup(''); 
+    setAtividadePopup(''); 
+    setHorasPopup(''); 
+    setDataInicioPopup(''); 
+    setDataConclusaoPopup(''); 
+    setSituacaoPopup('');
+
+  }
+
+  // função utilizada para excluir um item da EAP 
   async function excluirItem() { 
       
       setExibeCarregando(true);
-
       await web3eap_backend.excluirItem(idProjeto, idExcluir);
       let response = await web3eap_backend.getArrayItensEAP(idProjeto);
       setIdExcluir(null);
       let eapFormatada = formatarEAP(response[0]);       
       setEap(eapFormatada);
-
       setExibeCarregando(false);
+
   }
 
+  // função utilizada para apresentar mensagem de confirmação de exclusão de um item
   function exibirMensagemExcluir(id){
     setExibirMensagemExclusao(true);
     setIdExcluir(id);
   }
 
+  // função para confirmar a exclusão de um item
   function confirmarExclusao(){
     setExibirMensagemExclusao(false);    
     excluirItem();
   }
                                    
+  // função utilizada para apresentar a popup para edição de um item da EAP
   async function abrirPopupEditar(idItem, codigo, atividade, horas, dataInicio, dataConclusao, situacao) {
    
       atividade = atividade.replace(/\./g, '');
@@ -133,12 +140,15 @@ function eapView() {
 
   }
 
+  // função utilizada para registrar a alteração realizada em um item da EAP.
   async function salvarAlteracao() {        
 
-    if(codigoPopup == null || codigoPopup.trim()==''){
-      alert("Informe o código");
-    } else if(atividadePopup == null || atividadePopup.trim()==''){
-      alert("Informe a atividade");
+    if(codigoPopup == null || codigoPopup.trim()==''){      
+      setMensagemAlerta("É obrigatório informar o código");
+      setExibirMensagemAlerta(true);
+    } else if(atividadePopup == null || atividadePopup.trim()==''){      
+      setMensagemAlerta("É obrigatório informar a atividade");
+      setExibirMensagemAlerta(true);
     } else {     
 
       setShowPopupEditar(false);    
@@ -149,19 +159,14 @@ function eapView() {
       let eapFormatada = formatarEAP(response[0]);       
       setEap(eapFormatada);    
 
-      setIdItemPopup('');
-      setCodigoPopup(''); 
-      setAtividadePopup(''); 
-      setHorasPopup(''); 
-      setDataInicioPopup(''); 
-      setDataConclusaoPopup(''); 
-      setSituacaoPopup('');
+      limparCamposPopupCadastro();
       setExibeCarregando(false);
 
     }
 
   }        
 
+  // função utilizada para ordenar os itens da EAP
   function formatarEAP(eapForm){    
 
     let eapOrdenada = eapForm.sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // funcao para ordenar o array 
@@ -173,6 +178,7 @@ function eapView() {
       return eapOrdenada
   }
   
+  // função utilizada para formatar a hierarquia das contas utilizando . (ponto)
   function formatarAtividade(codigo, at){
 
     let espacos = '';
@@ -198,7 +204,6 @@ function eapView() {
     return espacos + at;
   }
 
-  // EAP
   const handleCodigo = (event) => {
     setCodigo(event.target.value);
   };
@@ -475,6 +480,20 @@ function eapView() {
           <Button variant="primary" onClick={ () => {confirmarExclusao()} }>
             Confirmar
           </Button>
+        </Modal.Footer>
+      </Modal>
+      
+      <Modal size="sm" show={exibirMensagemAlerta} onHide={() => { setExibirMensagemAlerta(false) }} aria-labelledby="contained-modal-title-vcenter" >
+        <Modal.Header closeButton>
+          <Modal.Title id="contained-modal-title-vcenter">
+            Alerta!
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>          
+          {mensagemAlerta}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={ () => { setExibirMensagemAlerta(false)} }>OK</Button>
         </Modal.Footer>
       </Modal>
       

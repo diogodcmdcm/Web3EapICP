@@ -2,82 +2,95 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { AuthClient } from "@dfinity/auth-client";
 import { useState, useEffect } from 'react';
 import { web3eap_backend } from 'declarations/web3eap_backend';
-import { Table, Button, Form, Stack, Modal, Navbar, Nav, NavDropdown, Badge, Container, Spinner, Row, Col } from 'react-bootstrap';
-import { Link , useNavigate} from 'react-router-dom';
+import { Table, Button, Form, Stack, Modal, Navbar, Nav, Badge, Container, Spinner, Row, Col } from 'react-bootstrap';
 import moment from 'moment';
 
- async function handleLogout(){
-   const authClient = await AuthClient.create();
-  
-   // Força o logout e recarrega a página
-   await authClient.logout();     
-   window.location.href = '/';
+  // funcão para desconectar da rede da ICP
+  async function handleLogout(){
+    const authClient = await AuthClient.create();  
+    // Força o logout e direciona para a página de login
+    await authClient.logout();     
+    window.location.href = '/';
+  };
 
- };
-
-function projectView() {
-   
-  const [exibeCarregando, setExibeCarregando] = useState(false);
-
-  function linkEap(idProjeto){      
-    window.location.href = '/eapLink/'+idProjeto;
-  }
-
-  useEffect( async () => {
+  function projectView() {   
+    const [exibeCarregando, setExibeCarregando] = useState(false); // constante utilizada para apresentar modal com mensagem de carregamento da página
+    const [showPopupProjeto, setShowPopupProjeto] = useState(false);  // constante utilizada para apresentar o popup de cadastro de novo projeto
     
-    let response = await web3eap_backend.getArrayProjetos();   
-    setProjetos(response);   
-  
-  }, []);
-  
-  const [showPopupProjeto, setShowPopupProjeto] = useState(false);  
-  const [nomeProjetoPopup, setNomeProjetoPopup] = useState('');  
-  const [horasEstimadasPopup, setHorasEstimadasPopup] = useState('');
-  const [dataInicioPopup, setDataInicioPopup] = useState(new Date());
-  const [dataConclusaoPopup, setDataConclusaoPopup] = useState(new Date());
-  const [situacaoPopup, setSituacaoPopup] = useState('');
-
-  const [projetos, setProjetos] = useState([]);
-
-  const handleClosePopupCadastrarProjeto = () => setShowPopupProjeto(false);  
-
-  const handleNomeProjetoPopup = (event) => {
-    setNomeProjetoPopup(event.target.value);
-  };
-
-  const handleHorasEstimadasPopup = (event) => {
-    setHorasEstimadasPopup(event.target.value);
-  };
-
-  const handleDataInicioPopup = (event) => {
-    setDataInicioPopup(event.target.value);
-  };
-
-  const handleDataConclusaoPopup = (event) => {
-    setDataConclusaoPopup(event.target.value);
-  };
-
-  const handleSituacaoPopup = (event) => {
-    setSituacaoPopup(event.target.value);
-  };
-
-  async function salvarProjeto() {            
-    setShowPopupProjeto(false);    
-    setExibeCarregando(true);    
-    let dti = new Date(dataInicioPopup);
-    let dtc = new Date(dataConclusaoPopup);
-        
-    await web3eap_backend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
-    let response = await web3eap_backend.getArrayProjetos();   
-    setProjetos(response);        
-    setNomeProjetoPopup('');
-    setExibeCarregando(false);
+    //Constantes utilizadas na popup que será apresentada para cadastro de novos projetos
+    const [nomeProjetoPopup, setNomeProjetoPopup] = useState('');  
+    const [horasEstimadasPopup, setHorasEstimadasPopup] = useState('');
+    const [dataInicioPopup, setDataInicioPopup] = useState(new Date());
+    const [dataConclusaoPopup, setDataConclusaoPopup] = useState(new Date());
+    const [situacaoPopup, setSituacaoPopup] = useState('');
     
-  }   
+    const [projetos, setProjetos] = useState([]); // array utilizado para armazenar os projetos que são apresentados na tela 
+    
+    const handleClosePopupCadastrarProjeto = () => setShowPopupProjeto(false);  // constante utilizada para fechar a popup de cadastro de projetos
 
-  async function abrirPopupCadastroProjeto() {   
-    setShowPopupProjeto(true);    
-  }   
+    const [exibirMensagemAlerta, setExibirMensagemAlerta] = useState(false);
+    const [mensagemAlerta, setMensagemAlerta] = useState(false);
+
+    // Esta função é utilizada para direcionar para a tela que irá permitir cadastrar e manter a EAP do projeto
+    function linkEap(idProjeto){      
+      window.location.href = '/eapLink/'+idProjeto;
+    }
+
+    useEffect( async () => {    
+      /* Ao carregar a página serão apresentados todos os projetos cadastrados. Esta função deverá ser aprimorada para pesquisar apenas 
+         os projetos que o ICP IDENTITY que acessou o sistema possui permissão */
+      let response = await web3eap_backend.getArrayProjetos();   
+      setProjetos(response);     
+    }, []); 
+
+    
+    const handleNomeProjetoPopup = (event) => {
+      setNomeProjetoPopup(event.target.value);
+    };
+
+    const handleHorasEstimadasPopup = (event) => {
+      setHorasEstimadasPopup(event.target.value);
+    };
+
+    const handleDataInicioPopup = (event) => {
+      setDataInicioPopup(event.target.value);
+    };
+
+    const handleDataConclusaoPopup = (event) => {
+      setDataConclusaoPopup(event.target.value);
+    };
+
+    const handleSituacaoPopup = (event) => {
+      setSituacaoPopup(event.target.value);
+    };
+
+    async function salvarProjeto() {        
+      
+      if(nomeProjetoPopup == null || nomeProjetoPopup.trim()==''){            
+        setMensagemAlerta("É obrigatório informar um nome para o projeto");
+        setExibirMensagemAlerta(true);      
+      } else {
+
+        setShowPopupProjeto(false);    
+        setExibeCarregando(true);    
+        // as variaveis dti e dtc são utilizadas para obter o timestamp correspondente as datas de início e fim do projeto.
+        let dti = new Date(dataInicioPopup);
+        let dtc = new Date(dataConclusaoPopup);
+          
+        // chamada para função do backend responsavel por gravar os projetos
+        await web3eap_backend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
+        let response = await web3eap_backend.getArrayProjetos();   
+        setProjetos(response);        
+        setNomeProjetoPopup('');
+        setExibeCarregando(false);    
+
+      }
+    }   
+
+    // função utilizada para exibir a popup utilizada para cadastrar novos projetos
+    async function abrirPopupCadastroProjeto() {   
+      setShowPopupProjeto(true);    
+    }   
 
   return (    
 
@@ -106,7 +119,7 @@ function projectView() {
           <thead>
             <th style={{ width: '5%' }} >Ação</th>
             <th style={{ width: '50%' }}>Nome Projeto</th>            
-            <th style={{ width: '10%' }}>Horas</th>            
+            <th style={{ width: '10%' }}>Horas Estimadas</th>            
             <th style={{ width: '10%' }}>Data de Início</th>            
             <th style={{ width: '10%' }}>Data de Conclusão</th>            
             <th style={{ width: '15%' }}>Situação</th>            
@@ -173,7 +186,7 @@ function projectView() {
               <Row>
                 <Col>
                   <Form.Group className="mb-3" controlId="popup.atividade">
-                    <Form.Label>Nome do Projeto</Form.Label>
+                    <Form.Label>Nome do Projeto*</Form.Label>
                     <Form.Control value={nomeProjetoPopup} onChange={handleNomeProjetoPopup} type="text" />
                   </Form.Group>   
                 </Col>                
@@ -230,6 +243,20 @@ function projectView() {
         <Modal.Body>
           <Spinner animation="border" role="status"></Spinner>&nbsp;<span >Por favor aguarde, processando!</span>       
         </Modal.Body>
+      </Modal>
+
+      <Modal size="sm" show={exibirMensagemAlerta} onHide={() => { setExibirMensagemAlerta(false) }} aria-labelledby="contained-modal-title-vcenter" >
+        <Modal.Header closeButton>
+          <Modal.Title id="contained-modal-title-vcenter">
+            Alerta!
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>          
+          {mensagemAlerta}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={ () => { setExibirMensagemAlerta(false)} }>OK</Button>
+        </Modal.Footer>
       </Modal>
 
       </section>      

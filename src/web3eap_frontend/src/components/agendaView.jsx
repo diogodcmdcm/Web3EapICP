@@ -7,19 +7,20 @@ import moment from 'moment';
 
 function agendaView() { 
   
-  const { idProjeto } = useParams(); 
+  const { idProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
   
   useEffect( async () => {     
-    
+        
     setExibeCarregando(true);
+    // o retorno desta requisição efetuada para o backend irá servir para preencher as opções do combobox de pessoas  
     let responseEquipe = await web3eap_backend.getArrayEquipe(idProjeto);    
     setEquipeOpcoes(responseEquipe[0]);    
 
+    // o retorno desta requisição efetuada para o backend irá servir para preencher as opções do combobox de atividades  
     let responseAtividade = await web3eap_backend.getArrayItensEAP(idProjeto);    
     setAtividadeOpcoes(responseAtividade[0]);
     
-    let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
-    //let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // funcao para ordenar o array 
+    let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);    
     setAgendaEquipe(response[0]);  
     
     setExibeCarregando(false);
@@ -32,12 +33,14 @@ function agendaView() {
   const [equipeOpcoes, setEquipeOpcoes] = useState([]);
   const [atividadeOpcoes, setAtividadeOpcoes] = useState([]);
               
+  //Constantes utilizadas na popup que será apresentada para cadastro de novas agendas 
   const [nome, setNome] = useState('');
   const [atividade, setAtividade] = useState('');
   const [data, setData] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaConclusao, setHoraConclusao] = useState('');
 
+  //Constantes utilizadas na popup que será apresentada para editar agenda 
   const [idItemPopup, setIdItemPopup] = useState('');
   const [nomePopup, setNomePopup] = useState('');
   const [atividadePopup, setAtividadePopup] = useState('');
@@ -45,22 +48,23 @@ function agendaView() {
   const [horaInicioPopup, setHoraInicioPopup] = useState('');
   const [horaConclusaoPopup, setHoraConclusaoPopup] = useState('');  
 
-  const [exibeCarregando, setExibeCarregando] = useState(false);
-  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false); 
-  const [idExcluir, setIdExcluir] = useState(null); 
+  const [exibeCarregando, setExibeCarregando] = useState(false); // constante utilizada para apresentar modal com mensagem de carregamento da página
+  const [exibirMensagemExclusao, setExibirMensagemExclusao] = useState(false);  // constante utilizada para apresentar modal com mensagem de confirmação de exclusão de item
+  const [idExcluir, setIdExcluir] = useState(null);  // constante utilizada para guardar o id da agenda selecionada para exclusão.
 
+  //Função utilizada para adicionar uma nova agenda
   async function adicionarItem() {        
     
     if(nome == null || nome.trim()==''){
-      alert("Informe o nome");
+      alert("É obrigatório selecionar uma pessoa!");
     } else if(atividade == null || atividade.trim()==''){
-      alert("Informe a atividade");
+      alert("É obrigatório informar a atividade!");
     } else if(data == null || data.trim()==''){
-      alert("Informe a data");
+      alert("É obrigatório informar a data!");
     } else if(horaInicio == null || horaInicio.trim()==''){
-      alert("Informe a hora de início");
+      alert("É obrigatório informar a hora de início!");
     } else if(horaConclusao == null || horaConclusao.trim()==''){
-      alert("Informe a hora de conclusão");  
+      alert("É obrigatório informar a hora de conclusão!");  
     } else {
 
       setExibeCarregando(true);
@@ -68,40 +72,52 @@ function agendaView() {
       await web3eap_backend.addAgendaEquipe(idProjeto, nome, atividade, data, horaInicio, horaConclusao);                                            
       let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
     
-      setAgendaEquipe(response[0]);      
+      setAgendaEquipe(response[0]);            
+      limparCampos();
 
-      setNome(''); 
-      setAtividade(''); 
-      setData(''); 
-      setHoraInicio(''); 
-      setHoraConclusao(''); 
-      setExibeCarregando(false);
-
-    }    
-        
+    }            
   } 
 
-  async function excluirItem() { 
+  function limparCampos(){
+    setNome(''); 
+    setAtividade(''); 
+    setData(''); 
+    setHoraInicio(''); 
+    setHoraConclusao(''); 
+    setExibeCarregando(false);
 
-      setExibeCarregando(true);
-      await web3eap_backend.excluirAgendaEquipe(idProjeto, idExcluir);
-      let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
+    setIdItemPopup('');
+    setNomePopup(''); 
+    setAtividadePopup(''); 
+    setDataPopup(''); 
+    setHoraInicioPopup(''); 
+    setHoraConclusaoPopup(''); 
+    setExibeCarregando(false);
 
-      //let eapFormatada = formatarEAP(response[0]);       
-      setAgendaEquipe(response[0]);
-      setExibeCarregando(false);
   }
 
+  // função utilizada para excluir uma agenda
+  async function excluirItem() { 
+    setExibeCarregando(true);
+    await web3eap_backend.excluirAgendaEquipe(idProjeto, idExcluir);
+    let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
+    setAgendaEquipe(response[0]);
+    setExibeCarregando(false);
+  }
+
+  // função utilizada para apresentar mensagem de confirmação de exclusão da agenda
   function exibirMensagemExcluir(id){
     setExibirMensagemExclusao(true);
     setIdExcluir(id);
   }
 
+  // função para confirmar a exclusão de uma agenda
   function confirmarExclusao(){
     setExibirMensagemExclusao(false);    
     excluirItem();
   }
-                                   
+  
+  // função utilizada para apresentar a popup para edição de uma agenda
   async function abrirPopupEditar(idItem, nome, atividade, data, horaInicio, horaConclusao) {   
       setShowPopupEditar(true);    
       setIdItemPopup(idItem);
@@ -112,35 +128,28 @@ function agendaView() {
       setHoraConclusaoPopup(horaConclusao);
   }
 
+  // função utilizada para registrar a alteração realizada em uma agenda
   async function salvarAlteracao() {        
 
     if(nomePopup == null || nomePopup.trim()==''){
-      alert("Informe o nome");
+      alert("É obrigatório selecionar uma pessoa!");
     } else if(atividadePopup == null || atividadePopup.trim()==''){
-      alert("Informe a atividade");
+      alert("É obrigatório selecionar uma atividade!");
     } else if(dataPopup == null || dataPopup.trim()==''){
-      alert("Informe a data");
+      alert("É obrigatório informar a data!");
     } else if(horaInicioPopup == null || horaInicioPopup.trim()==''){
-      alert("Informe a hora de início");
+      alert("É obrigatório informar a hora de início!");
     } else if(horaConclusaoPopup == null || horaConclusaoPopup.trim()==''){
-      alert("Informe a hora de conclusão");
+      alert("É obrigatório informar a hora de conclusão!");
     } else {     
 
       setShowPopupEditar(false);    
       setExibeCarregando(true);
       await web3eap_backend.alterarAgendaEquipe(idProjeto, idItemPopup,nomePopup, atividadePopup, dataPopup, horaInicioPopup, horaConclusaoPopup);
       let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
-
-      //let eapFormatada = formatarEAP(response[0]);       
+      
       setAgendaEquipe(response[0]);     
-
-      setIdItemPopup('');
-      setNomePopup(''); 
-      setAtividadePopup(''); 
-      setDataPopup(''); 
-      setHoraInicioPopup(''); 
-      setHoraConclusaoPopup(''); 
-      setExibeCarregando(false);
+      limparCampos();
     }
 
   }        
@@ -301,7 +310,7 @@ function agendaView() {
                     <Form.Select aria-label="Selecione" value={nome} onChange={handleNome} >
                       <option>Selecione</option>                  
                       {   
-                        equipeOpcoes.map((op) =>
+                        equipeOpcoes.slice(1).map((op) =>
                           <option value={op.nome}>{op.nome}</option> 
                       )}
                     </Form.Select>                      
@@ -312,7 +321,7 @@ function agendaView() {
                     <Form.Select aria-label="Selecione" value={atividade} onChange={handleAtividade} >
                       <option>Selecione</option>                                        
                       {   
-                        atividadeOpcoes.map((op) =>
+                        atividadeOpcoes.slice(1).map((op) =>
                           <option value={op.atividade}>{op.atividade}</option> 
                       )}
                   </Form.Select>                      

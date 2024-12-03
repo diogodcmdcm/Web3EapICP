@@ -1,20 +1,63 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect } from 'react';
-import { web3eap_backend } from 'declarations/web3eap_backend';
+import { createActor, web3eap_backend } from 'declarations/web3eap_backend';
 import { Table, Button, Form, Stack, Modal, Navbar, Nav, Card, Container, Spinner } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
+
+import {AuthClient} from "@dfinity/auth-client"
+import {HttpAgent} from "@dfinity/agent";
+
+let actorWeb3EAPBackend = web3eap_backend;
 
 function equipeView() { 
   
   const { idProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
   
   useEffect( async () => {     
+
     setExibeCarregando(true); // exibe mensagem carregando enquanto o sistema obtem a lista de equipe no backend
-    //chamada para o backend para buscar as pessoas já cadastradas
-    let response = await web3eap_backend.getArrayEquipe(idProjeto);    
-    setEquipe(response[0]);    
-    setExibeCarregando(false);
+
+    // função utilizada para verificar se o usuário está autenticado na rede da ICP 
+    async function initAuth() {
+      const authClient = await AuthClient.create();
+
+      // Verifica se já há uma sessão autenticada
+      const authenticated = await authClient.isAuthenticated();
+      if (authenticated) {
+        const identity = authClient.getIdentity();        
+
+        /* A identidade do usuário autenticado poderá ser utilizada para criar um HttpAgent.
+        Ele será posteriormente utilizado para criar o Actor (autenticado) correspondente ao Canister de Backend  */
+        const agent = new HttpAgent({identity});
+        /* O comando abaixo irá criar um Actor Actor (autenticado) correspondente ao Canister de Backend  
+          desta forma, todas as chamadas realizadas a metodos SHARED no Backend irão receber o "Principal" do usuário */
+        actorWeb3EAPBackend = createActor(process.env.CANISTER_ID_WEB3EAP_BACKEND, {
+            agent,
+        });
+
+        //chamada para o backend para buscar as pessoas já cadastradas
+        let idP = parseInt(idProjeto);
+        let response = await actorWeb3EAPBackend.getArrayEquipe(idP);      
+        setEquipe(response[0]);            
+        setExibeCarregando(false);
+      } else {
+        setExibeCarregando(false);
+        // caso o usuário não estiver autenticado na rede da ICP
+        window.location.href = '/';
+      }
+    }
+
+    await initAuth();                   
+
   }, []);  
+
+  // funcão para desconectar da rede da ICP
+  async function handleLogout(){
+    const authClient = await AuthClient.create();  
+    // Força o logout e direciona para a página de login
+    await authClient.logout();     
+    window.location.href = '/';
+  };
   
   const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  // constante utilizada para apresentar a popup de cadastro de equipe
   const [showPopupEditar, setShowPopupEditar] = useState(false);  // constante utilizada para apresentar a popup de alteração de equipe
@@ -44,26 +87,29 @@ function equipeView() {
       setShowPopupAdicionar(false);
       setExibeCarregando(true);
       //chamada para o backend para adicionar a nova pessoa
-      await web3eap_backend.addEquipe(idProjeto, nome, cargo);
+      let idP = parseInt(idProjeto);
+      await actorWeb3EAPBackend.addEquipe(idP, nome, cargo);
       //chamada para o backend, serão retornadas as pessoas cadastradas 
-      let response = await web3eap_backend.getArrayEquipe(idProjeto);
+      let response = await actorWeb3EAPBackend.getArrayEquipe(idP);
+      setEquipe(response[0]);
+      setExibeCarregando(false);
       limparCampos();
     }    
         
   } 
 
-  function limparCampos(){
-    setEquipe(response[0]);
+  function limparCampos(){    
     setNome(''); 
-    setCargo('');       
-    setExibeCarregando(false);
+    setCargo('');           
   }
 
   // função utilizada para excluir um pessoa 
   async function excluirItem() { 
       setExibeCarregando(true);
-      await web3eap_backend.excluirEquipe(idProjeto, idExcluir);
-      let response = await web3eap_backend.getArrayEquipe(idProjeto);
+      let idP = parseInt(idProjeto);
+      let idE = parseInt(idExcluir);
+      await actorWeb3EAPBackend.excluirEquipe(idP, idE);
+      let response = await actorWeb3EAPBackend.getArrayEquipe(idP);
       setEquipe(response[0]);
       setExibeCarregando(false);
   }
@@ -98,8 +144,12 @@ function equipeView() {
     } else {     
       setShowPopupEditar(false);    
       setExibeCarregando(true);
-      await web3eap_backend.alterarEquipe(idProjeto, idItemPopup,nomePopup, cargoPopup);
-      let response = await web3eap_backend.getArrayEquipe(idProjeto);
+
+      let idP = parseInt(idProjeto);
+      let idA = parseInt(idItemPopup);
+
+      await actorWeb3EAPBackend.alterarEquipe(idP, idA, nomePopup, cargoPopup);
+      let response = await actorWeb3EAPBackend.getArrayEquipe(idP);
       setEquipe(response[0]);            
       setIdItemPopup('');
       setNomePopup(''); 
@@ -152,7 +202,7 @@ function equipeView() {
               <Nav.Link>|</Nav.Link>
               <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
             </Nav>              
-            <Button variant="light">Sair</Button>
+            <Button onClick={handleLogout} variant="light">Sair</Button>
           </Navbar.Collapse>
         </Container>
       </Navbar>
@@ -224,7 +274,7 @@ function equipeView() {
 
         </Table>
     
-        <Modal show={showPopupAdicionar} onHide={handleClosePopupAdicionar}>
+        <Modal show={showPopupAdicionar} onHide={handleClosePopupAdicionar} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
             <Modal.Title>Adicionar</Modal.Title>
           </Modal.Header>
@@ -248,7 +298,7 @@ function equipeView() {
       </Modal>        
 
 
-        <Modal show={showPopupEditar} onHide={handleClosePopupEditar}>
+        <Modal show={showPopupEditar} onHide={handleClosePopupEditar} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
             <Modal.Title>Editar</Modal.Title>
           </Modal.Header>
@@ -274,13 +324,13 @@ function equipeView() {
           </Modal.Footer>
       </Modal>        
       
-      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} aria-labelledby="example-modal-sizes-title-sm" >        
+      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} backdrop="static" keyboard={false} aria-labelledby="example-modal-sizes-title-sm" >        
         <Modal.Body>
           <Spinner animation="border" role="status"></Spinner>&nbsp;<span >Por favor aguarde, processando!</span>       
         </Modal.Body>
       </Modal>
 
-      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} animation={false}>
+      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} backdrop="static" keyboard={false} animation={false}>
         <Modal.Header closeButton>
           <Modal.Title>Excluir</Modal.Title>
         </Modal.Header>

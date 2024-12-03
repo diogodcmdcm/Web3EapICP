@@ -4,9 +4,14 @@ import React from 'react';
 import { Button, Form, Modal, Navbar, Nav, Card, Container } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { web3eap_backend } from 'declarations/web3eap_backend';
+import { createActor, web3eap_backend } from 'declarations/web3eap_backend';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
+
+import {AuthClient} from "@dfinity/auth-client"
+import {HttpAgent} from "@dfinity/agent";
+
+let actorWeb3EAPBackend = web3eap_backend;
 
 moment.locale('pt-br');
 const localizer = momentLocalizer(moment);
@@ -42,36 +47,71 @@ function calendarioEquipeView() {
     setOpen(false);    
   };  
   
-  useEffect(() => {     
+  useEffect( async () => {     
 
-    const carregarCalendario = async () => {
+    // função utilizada para verificar se o usuário está autenticado na rede da ICP 
+    async function initAuth() {
+      const authClient = await AuthClient.create();
+
+      // Verifica se já há uma sessão autenticada
+      const authenticated = await authClient.isAuthenticated();
+      if (authenticated) {
+        const identity = authClient.getIdentity();        
+
+        /* A identidade do usuário autenticado poderá ser utilizada para criar um HttpAgent.
+        Ele será posteriormente utilizado para criar o Actor (autenticado) correspondente ao Canister de Backend  */
+        const agent = new HttpAgent({identity});
+        /* O comando abaixo irá criar um Actor Actor (autenticado) correspondente ao Canister de Backend  
+          desta forma, todas as chamadas realizadas a metodos SHARED no Backend irão receber o "Principal" do usuário */
+        actorWeb3EAPBackend = createActor(process.env.CANISTER_ID_WEB3EAP_BACKEND, {
+            agent,
+        });
+        
+        const carregarCalendario = async () => {
       
-      // busca as agendas para obter as informações que serão necessárias renderizar no calendario
-      let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);    
-      let calendarioEvents = [];
+          // busca as agendas para obter as informações que serão necessárias renderizar no calendario
+          let idP = parseInt(idProjeto);
+          let response = await actorWeb3EAPBackend.getArrayAgendaEquipe(idP);    
+          let calendarioEvents = [];
+    
+          for (let i=0; i < response[0].length; i++) {
+            if(i>0){      
+              // Extrai o ano (4 primeiros caracteres)
+              const ano = response[0][i].data.substring(0, 4);  
+              // Extrai o mês (do 6º ao 7º caractere)
+              const mes = response[0][i].data.substring(5, 7);          
+              // Extrai o dia (do 9º ao 10º caractere)
+              const dia = response[0][i].data.substring(8, 10);        
+                      
+              const [horaInicio, minutoInicio] = response[0][i].horaInicio.split(":");
+              const [horaConclusao, minutoConclusao] = response[0][i].horaConclusao.split(":");
+        
+              calendarioEvents.push( {title: response[0][i].nome + ' - ' + response[0][i].atividade, start: new Date(ano, (mes-1), dia, horaInicio, minutoInicio)  , end: new Date(ano, (mes-1), dia, horaConclusao, minutoConclusao) } );
+            }      
+          }
+          setEvents(calendarioEvents);
+        };  
+        
+        carregarCalendario();       
 
-      for (let i=0; i < response[0].length; i++) {
-        if(i>0){      
-          // Extrai o ano (4 primeiros caracteres)
-          const ano = response[0][i].data.substring(0, 4);  
-          // Extrai o mês (do 6º ao 7º caractere)
-          const mes = response[0][i].data.substring(5, 7);          
-          // Extrai o dia (do 9º ao 10º caractere)
-          const dia = response[0][i].data.substring(8, 10);        
-                  
-          const [horaInicio, minutoInicio] = response[0][i].horaInicio.split(":");
-          const [horaConclusao, minutoConclusao] = response[0][i].horaConclusao.split(":");
-    
-          calendarioEvents.push( {title: response[0][i].nome + ' - ' + response[0][i].atividade, start: new Date(ano, (mes-1), dia, horaInicio, minutoInicio)  , end: new Date(ano, (mes-1), dia, horaConclusao, minutoConclusao) } );
-        }      
+      } else {        
+        // caso o usuário não estiver autenticado na rede da ICP
+        window.location.href = '/';
       }
-      setEvents(calendarioEvents);
-    };  
-    
-    carregarCalendario();       
+    }
+
+    await initAuth();    
 
   }, []);  
-                  
+                
+  // funcão para desconectar da rede da ICP
+  async function handleLogout(){
+    const authClient = await AuthClient.create();  
+    // Força o logout e direciona para a página de login
+    await authClient.logout();     
+    window.location.href = '/';
+  };
+
   return (
     <div>    
 
@@ -91,7 +131,7 @@ function calendarioEquipeView() {
               <Nav.Link>|</Nav.Link>
               <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
             </Nav>              
-            <Button variant="light">Sair</Button>
+            <Button onClick={handleLogout} variant="light">Sair</Button>
           </Navbar.Collapse>
         </Container>
       </Navbar>
@@ -120,7 +160,7 @@ function calendarioEquipeView() {
             step={60}
           />
 
-      <Modal show={open} onHide={handleClose} >
+      <Modal show={open} onHide={handleClose} backdrop="static" keyboard={false} >
         
           <Modal.Body>            
             <h1>Agenda</h1>

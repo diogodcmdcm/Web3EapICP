@@ -1,9 +1,14 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect } from 'react';
-import { web3eap_backend } from 'declarations/web3eap_backend';
+import { createActor, web3eap_backend } from 'declarations/web3eap_backend';
 import { Table, Button, Form, Stack, Modal, Navbar, Nav, Card, Container, Spinner } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
+
+import {AuthClient} from "@dfinity/auth-client"
+import {HttpAgent} from "@dfinity/agent";
+
+let actorWeb3EAPBackend = web3eap_backend;
 
 function agendaView() { 
   
@@ -12,20 +17,55 @@ function agendaView() {
   useEffect( async () => {     
         
     setExibeCarregando(true);
-    // o retorno desta requisição efetuada para o backend irá servir para preencher as opções do combobox de pessoas  
-    let responseEquipe = await web3eap_backend.getArrayEquipe(idProjeto);    
-    setEquipeOpcoes(responseEquipe[0]);    
 
-    // o retorno desta requisição efetuada para o backend irá servir para preencher as opções do combobox de atividades  
-    let responseAtividade = await web3eap_backend.getArrayItensEAP(idProjeto);    
-    setAtividadeOpcoes(responseAtividade[0]);
-    
-    let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);    
-    setAgendaEquipe(response[0]);  
-    
-    setExibeCarregando(false);
+    // função utilizada para verificar se o usuário está autenticado na rede da ICP 
+    async function initAuth() {
+      const authClient = await AuthClient.create();
+
+      // Verifica se já há uma sessão autenticada
+      const authenticated = await authClient.isAuthenticated();
+      if (authenticated) {
+        const identity = authClient.getIdentity();        
+
+        /* A identidade do usuário autenticado poderá ser utilizada para criar um HttpAgent.
+        Ele será posteriormente utilizado para criar o Actor (autenticado) correspondente ao Canister de Backend  */
+        const agent = new HttpAgent({identity});
+        /* O comando abaixo irá criar um Actor Actor (autenticado) correspondente ao Canister de Backend  
+          desta forma, todas as chamadas realizadas a metodos SHARED no Backend irão receber o "Principal" do usuário */
+        actorWeb3EAPBackend = createActor(process.env.CANISTER_ID_WEB3EAP_BACKEND, {
+            agent,
+        });
+
+        // o retorno desta requisição efetuada para o backend irá servir para preencher as opções do combobox de pessoas  
+        let idP = parseInt(idProjeto);
+        let responseEquipe = await actorWeb3EAPBackend.getArrayEquipe(idP);    
+        setEquipeOpcoes(responseEquipe[0]);    
+
+        // o retorno desta requisição efetuada para o backend irá servir para preencher as opções do combobox de atividades  
+        let responseAtividade = await actorWeb3EAPBackend.getArrayItensEAP(idP);    
+        setAtividadeOpcoes(responseAtividade[0]);
+        
+        let response = await actorWeb3EAPBackend.getArrayAgendaEquipe(idP);    
+        setAgendaEquipe(response[0]);  
+        setExibeCarregando(false);
+      } else {
+        setExibeCarregando(false);
+        // caso o usuário não estiver autenticado na rede da ICP
+        window.location.href = '/';
+      }
+    }
+
+    await initAuth();              
 
   }, []);  
+
+  // funcão para desconectar da rede da ICP
+  async function handleLogout(){
+    const authClient = await AuthClient.create();  
+    // Força o logout e direciona para a página de login
+    await authClient.logout();     
+    window.location.href = '/';
+  };
 
   const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  
   const [showPopupEditar, setShowPopupEditar] = useState(false);  
@@ -69,8 +109,9 @@ function agendaView() {
 
       setExibeCarregando(true);
       setShowPopupAdicionar(false);
-      await web3eap_backend.addAgendaEquipe(idProjeto, nome, atividade, data, horaInicio, horaConclusao);                                            
-      let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
+      let idP = parseInt(idProjeto);
+      await actorWeb3EAPBackend.addAgendaEquipe(idP, nome, atividade, data, horaInicio, horaConclusao);                                            
+      let response = await actorWeb3EAPBackend.getArrayAgendaEquipe(idP);
     
       setAgendaEquipe(response[0]);            
       limparCampos();
@@ -99,8 +140,10 @@ function agendaView() {
   // função utilizada para excluir uma agenda
   async function excluirItem() { 
     setExibeCarregando(true);
-    await web3eap_backend.excluirAgendaEquipe(idProjeto, idExcluir);
-    let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
+    let idP = parseInt(idProjeto);
+    let idE = parseInt(idExcluir);
+    await actorWeb3EAPBackend.excluirAgendaEquipe(idP, idE);
+    let response = await actorWeb3EAPBackend.getArrayAgendaEquipe(idP);
     setAgendaEquipe(response[0]);
     setExibeCarregando(false);
   }
@@ -145,8 +188,10 @@ function agendaView() {
 
       setShowPopupEditar(false);    
       setExibeCarregando(true);
-      await web3eap_backend.alterarAgendaEquipe(idProjeto, idItemPopup,nomePopup, atividadePopup, dataPopup, horaInicioPopup, horaConclusaoPopup);
-      let response = await web3eap_backend.getArrayAgendaEquipe(idProjeto);
+      let idP = parseInt(idProjeto);
+      let idI = parseInt(idItemPopup);
+      await actorWeb3EAPBackend.alterarAgendaEquipe(idP, idI, nomePopup, atividadePopup, dataPopup, horaInicioPopup, horaConclusaoPopup);
+      let response = await actorWeb3EAPBackend.getArrayAgendaEquipe(idP);
       
       setAgendaEquipe(response[0]);     
       limparCampos();
@@ -221,7 +266,7 @@ function agendaView() {
                 <Nav.Link>|</Nav.Link>
                 <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
               </Nav>              
-              <Button variant="light">Sair</Button>
+              <Button onClick={handleLogout} variant="light">Sair</Button>
             </Navbar.Collapse>
           </Container>
         </Navbar>
@@ -299,7 +344,7 @@ function agendaView() {
 
         </Table>
     
-        <Modal show={showPopupAdicionar} onHide={handleClosePopupAdicionar}>
+        <Modal show={showPopupAdicionar} onHide={handleClosePopupAdicionar} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
             <Modal.Title>Adicionar Agenda</Modal.Title>
           </Modal.Header>
@@ -349,7 +394,7 @@ function agendaView() {
           </Modal.Footer>
       </Modal>        
 
-        <Modal show={showPopupEditar} onHide={handleClosePopupEditar}>
+        <Modal show={showPopupEditar} onHide={handleClosePopupEditar} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
             <Modal.Title>Editar Agenda</Modal.Title>
           </Modal.Header>
@@ -401,13 +446,13 @@ function agendaView() {
           </Modal.Footer>
       </Modal>        
       
-      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} aria-labelledby="example-modal-sizes-title-sm" >        
+      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} backdrop="static" keyboard={false} aria-labelledby="example-modal-sizes-title-sm" >        
         <Modal.Body>
           <Spinner animation="border" role="status"></Spinner>&nbsp;<span >Por favor aguarde, processando!</span>       
         </Modal.Body>
       </Modal>
 
-      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} animation={false}>
+      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} backdrop="static" keyboard={false} animation={false}>
         <Modal.Header closeButton>
           <Modal.Title>Excluir</Modal.Title>
         </Modal.Header>

@@ -1,9 +1,14 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useEffect } from 'react';
-import { web3eap_backend } from 'declarations/web3eap_backend';
+import { createActor, web3eap_backend } from 'declarations/web3eap_backend';
 import { Table, Button, Form, Stack, Modal, Navbar, Nav, Badge, Card, Container, Spinner } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
+
+import {AuthClient} from "@dfinity/auth-client"
+import {HttpAgent} from "@dfinity/agent";
+
+let actorWeb3EAPBackend = web3eap_backend;
 
 function eapView() { 
   
@@ -11,12 +16,54 @@ function eapView() {
 
   useEffect( async () => {   
     setExibeCarregando(true); // exibe mensagem carregando enquanto o sistema obtem a lista da EAP no backend
-    //chamada para o backend para buscar os itens da EAP já cadastrados
-    let response = await web3eap_backend.getArrayItensEAP(idProjeto);
-    let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // função para ordenar o array 
-    setEap(eapOrdenada);   
-    setExibeCarregando(false); 
+
+
+    // função utilizada para verificar se o usuário está autenticado na rede da ICP 
+    async function initAuth() {
+      const authClient = await AuthClient.create();
+
+      // Verifica se já há uma sessão autenticada
+      const authenticated = await authClient.isAuthenticated();
+      if (authenticated) {
+        const identity = authClient.getIdentity();        
+
+        /* A identidade do usuário autenticado poderá ser utilizada para criar um HttpAgent.
+        Ele será posteriormente utilizado para criar o Actor (autenticado) correspondente ao Canister de Backend  */
+        const agent = new HttpAgent({identity});
+        /* O comando abaixo irá criar um Actor Actor (autenticado) correspondente ao Canister de Backend  
+          desta forma, todas as chamadas realizadas a metodos SHARED no Backend irão receber o "Principal" do usuário */
+        actorWeb3EAPBackend = createActor(process.env.CANISTER_ID_WEB3EAP_BACKEND, {
+            agent,
+        });
+
+        //chamada para o backend para buscar os itens da EAP já cadastrados
+        const idProjetoNat = Number(idProjeto);
+        let response = await actorWeb3EAPBackend.getArrayItensEAP(idProjetoNat);
+        if(response[0]!=null&&response[0]!=''){
+          let eapOrdenada = response[0].sort((a,b) => (a.codigo.replace(/\./g, '')) - (b.codigo.replace(/\./g, '')) ); // função para ordenar o array 
+          let eapFormatada = formatarEAP(eapOrdenada); 
+          setEap(eapFormatada);   
+        }        
+        setExibeCarregando(false); 
+
+      } else {
+        setExibeCarregando(false);
+        // caso o usuário não estiver autenticado na rede da ICP
+        window.location.href = '/';
+      }
+    }
+
+    await initAuth();                   
+    
   }, []);  
+
+  // funcão para desconectar da rede da ICP
+  async function handleLogout(){
+    const authClient = await AuthClient.create();  
+    // Força o logout e direciona para a página de login
+    await authClient.logout();     
+    window.location.href = '/';
+  };
   
   const [showPopupAdicionar, setShowPopupAdicionar] = useState(false);  // constante utilizada para apresentar a popup de cadastro de item da EAP
   const [showPopupEditar, setShowPopupEditar] = useState(false);        // constante utilizada para apresentar a popup de alteração de item da EAP
@@ -61,9 +108,10 @@ function eapView() {
       setExibeCarregando(true);
       setShowPopupAdicionar(false);
       //chamada para o backend para adicionar o item na EAP do projeto
-      await web3eap_backend.addItemNoArray(idProjeto, codigo, atividade, horas, dataInicio, dataConclusao, situacao);
+      const idProjetoNat = Number(idProjeto);
+      await actorWeb3EAPBackend.addItemNoArray(idProjetoNat, codigo, atividade, horas, dataInicio, dataConclusao, situacao);
       //chamada para o backend, serão retornados os itens da EAP 
-      let response = await web3eap_backend.getArrayItensEAP(idProjeto);
+      let response = await actorWeb3EAPBackend.getArrayItensEAP(idProjetoNat);
     
       //chamada para função que irá formatar a lista da EAP (organizar por código e adicionar . para expressar a hierarquia)
       let eapFormatada = formatarEAP(response[0]); 
@@ -102,8 +150,10 @@ function eapView() {
   async function excluirItem() { 
       
       setExibeCarregando(true);
-      await web3eap_backend.excluirItem(idProjeto, idExcluir);
-      let response = await web3eap_backend.getArrayItensEAP(idProjeto);
+      const idProjetoNat = Number(idProjeto);
+      const idExcluirNat = Number(idExcluir);
+      await actorWeb3EAPBackend.excluirItem(idProjetoNat, idExcluirNat);
+      let response = await actorWeb3EAPBackend.getArrayItensEAP(idProjetoNat);
       setIdExcluir(null);
       let eapFormatada = formatarEAP(response[0]);       
       setEap(eapFormatada);
@@ -153,8 +203,10 @@ function eapView() {
 
       setShowPopupEditar(false);    
       setExibeCarregando(true);
-      await web3eap_backend.alterarItemEAP(idProjeto, idItemPopup,codigoPopup, atividadePopup, horasPopup, dataInicioPopup, dataConclusaoPopup, situacaoPopup);
-      let response = await web3eap_backend.getArrayItensEAP(idProjeto);
+      const idProjetoNat = Number(idProjeto);
+      const idItemPopupNat = Number(idItemPopup);
+      await actorWeb3EAPBackend.alterarItemEAP(idProjetoNat, idItemPopupNat,codigoPopup, atividadePopup, horasPopup, dataInicioPopup, dataConclusaoPopup, situacaoPopup);
+      let response = await actorWeb3EAPBackend.getArrayItensEAP(idProjetoNat);
 
       let eapFormatada = formatarEAP(response[0]);       
       setEap(eapFormatada);    
@@ -278,7 +330,7 @@ function eapView() {
                 <Nav.Link>|</Nav.Link>
                 <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
               </Nav>              
-              <Button variant="light">Sair</Button>
+              <Button onClick={handleLogout} variant="light">Sair</Button>
             </Navbar.Collapse>
           </Container>
         </Navbar>
@@ -362,7 +414,7 @@ function eapView() {
 
         </Table>
     
-        <Modal show={showPopupAdicionar} onHide={handleClosePopupAdicionar}>
+        <Modal show={showPopupAdicionar} onHide={handleClosePopupAdicionar} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
             <Modal.Title>Adicionar</Modal.Title>
           </Modal.Header>
@@ -412,7 +464,7 @@ function eapView() {
       </Modal>        
 
 
-        <Modal show={showPopupEditar} onHide={handleClosePopupEditar}>
+        <Modal show={showPopupEditar} onHide={handleClosePopupEditar} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
             <Modal.Title>Editar</Modal.Title>
           </Modal.Header>
@@ -462,13 +514,13 @@ function eapView() {
           </Modal.Footer>
       </Modal>        
 
-      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} aria-labelledby="" >        
+      <Modal size="sm" show={exibeCarregando} onHide={() => setExibeCarregando(false)} aria-labelledby="" backdrop="static" keyboard={false} >        
         <Modal.Body>
           <Spinner animation="border" role="status"></Spinner>&nbsp;<span >Por favor aguarde, processando!</span>       
         </Modal.Body>
       </Modal>
 
-      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} animation={false}>
+      <Modal show={exibirMensagemExclusao} onHide={() => { setExibirMensagemExclusao(false) }} animation={false} backdrop="static" keyboard={false} >
         <Modal.Header closeButton>
           <Modal.Title>Excluir</Modal.Title>
         </Modal.Header>
@@ -483,7 +535,7 @@ function eapView() {
         </Modal.Footer>
       </Modal>
       
-      <Modal size="sm" show={exibirMensagemAlerta} onHide={() => { setExibirMensagemAlerta(false) }} aria-labelledby="contained-modal-title-vcenter" >
+      <Modal size="sm" show={exibirMensagemAlerta} onHide={() => { setExibirMensagemAlerta(false) }} backdrop="static" keyboard={false} aria-labelledby="contained-modal-title-vcenter" >
         <Modal.Header closeButton>
           <Modal.Title id="contained-modal-title-vcenter">
             Alerta!

@@ -18,7 +18,7 @@ const localizer = momentLocalizer(moment);
 
 function calendarioProjetoView() { 
 
-  const { idProjeto } = useParams(); 
+  const { idProjeto, nomeProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
 
   //constantes utilizadas para configuração do componente do calendario
   const [events, setEvents] = React.useState([]);    
@@ -70,7 +70,7 @@ function calendarioProjetoView() {
           let calendarioEvents = [];
           for (let i=0; i < response[0].length; i++) {
     
-            if(i>0){
+            
             
               // Extrai o ano (4 primeiros caracteres)
               const anoInicio = response[0][i].dataInicio.substring(0, 4);  
@@ -87,7 +87,7 @@ function calendarioProjetoView() {
               const diaConclusao = response[0][i].dataConclusao.substring(8, 10);        
         
               calendarioEvents.push( {title: response[0][i].atividade, start: new Date(anoInicio, (mesInicio-1), diaInicio, 5, 0)  , end: new Date(anoConclusao, (mesConclusao-1), diaConclusao, 6, 0),  allDay: true } );
-            }      
+            
           }
     
           setEvents(calendarioEvents);
@@ -123,15 +123,15 @@ function calendarioProjetoView() {
             <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll >
               <Nav.Link  href="/">Lista de Projetos</Nav.Link>                                
               <Nav.Link>|</Nav.Link>       
-              <Nav.Link  href={'/eapLink/'+idProjeto} >EAP do Projeto</Nav.Link>                                        
+              <Nav.Link  href={'/eapLink/'+idProjeto+'/'+nomeProjeto} >EAP do Projeto</Nav.Link>                                        
               <Nav.Link>|</Nav.Link>                          
-              <Nav.Link  href={'/equipeLink/'+idProjeto} >Equipe do Projeto</Nav.Link>                                        
+              <Nav.Link  href={'/equipeLink/'+idProjeto+'/'+nomeProjeto} >Equipe do Projeto</Nav.Link>                                        
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/agendaLink/'+idProjeto} >Agenda da Equipe</Nav.Link>                
+              <Nav.Link  href={'/agendaLink/'+idProjeto+'/'+nomeProjeto} >Agenda da Equipe</Nav.Link>                
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto} >Calendário da Equipe</Nav.Link>                
+              <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto+'/'+nomeProjeto} >Calendário da Equipe</Nav.Link>                
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
+              <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto+'/'+nomeProjeto} >Calendário do Projeto</Nav.Link>              
             </Nav>              
             <Button onClick={handleLogout} variant="light">Sair</Button>
           </Navbar.Collapse>
@@ -139,7 +139,7 @@ function calendarioProjetoView() {
       </Navbar>
          
       <Card>
-        <Card.Body>{idProjeto} / Calendário do Projeto</Card.Body>
+        <Card.Body>{nomeProjeto} / Calendário do Projeto</Card.Body>
       </Card>                  
 
       <br/>

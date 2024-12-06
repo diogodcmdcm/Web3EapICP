@@ -86,21 +86,24 @@ actor {
       //arrayProjeto := Array.append<Projeto>(arrayProjeto, [novoProjeto]);
       arrayProjeto.add(novoProjeto);
 
-      identificadorEAP := identificadorEAP + 1;    
-      var novoItem : ItemEAP = {id = identificadorEAP; codigo = ""; atividade = "Clique no botão + para adicionar um item na EAP. É importante o código seguir o padrão 00.00.00.00.00"; horas = ""; dataInicio = ""; dataConclusao = ""; situacao = "" };
-      var arrayEAP = [novoItem];
-      mapProjetosEAP.put(identificadorProjeto, arrayEAP);
+      //identificadorEAP := identificadorEAP + 1;    
+      //var novoItem : ItemEAP = {id = identificadorEAP; codigo = ""; atividade = nome; horas = ""; dataInicio = ""; dataConclusao = ""; situacao = "" };
+      //var arrayEAP = [novoItem];
+      //mapProjetosEAP.put(identificadorProjeto, arrayEAP);
+      mapProjetosEAP.put(identificadorProjeto, []);
 
-      identificadorEquipe := identificadorEquipe + 1;    
-      var equipe : Equipe = {id = identificadorEquipe; nome = "Clique no botão + para adicionar uma nova pessoa da equipe."; cargo = ""; };
+      //identificadorEquipe := identificadorEquipe + 1;    
+      //var equipe : Equipe = {id = identificadorEquipe; nome = "Clique no botão + para adicionar uma nova pessoa da equipe."; cargo = ""; };
         
-      var arrayEquipe = [equipe];
-      mapProjetosEquipe.put(identificadorProjeto, arrayEquipe);
+      //var arrayEquipe = [equipe];
+      //mapProjetosEquipe.put(identificadorProjeto, arrayEquipe);
+      mapProjetosEquipe.put(identificadorProjeto, []);
 
-      identificadorAgendaEquipe := identificadorAgendaEquipe + 1;    
-      var agendaEquipe : AgendaEquipe = {id = identificadorAgendaEquipe; nome = "Clique no botão + para adicionar uma nova agenda."; atividade = ""; data= "";  horaInicio= "";  horaConclusao = ""};
-      var arrayAgendaEquipe = [agendaEquipe];
-      mapProjetosAgendaEquipe.put(identificadorProjeto, arrayAgendaEquipe);
+      //identificadorAgendaEquipe := identificadorAgendaEquipe + 1;    
+      //var agendaEquipe : AgendaEquipe = {id = identificadorAgendaEquipe; nome = "Clique no botão + para adicionar uma nova agenda."; atividade = ""; data= "";  horaInicio= "";  horaConclusao = ""};
+      //var arrayAgendaEquipe = [agendaEquipe];
+      //mapProjetosAgendaEquipe.put(identificadorProjeto, arrayAgendaEquipe);
+      mapProjetosAgendaEquipe.put(identificadorProjeto, []);
 
   };
 
@@ -171,7 +174,16 @@ actor {
           return false;
         }
       };
+      //exclusão do projeto
       arrayProjeto.filterEntries(localizaProjeto);
+
+      //exclusão da EAP do projeto
+      await excluirTodosItensProjeto(idProjeto);    
+      //exclusão da equipe inteira do projeto
+      await excluirTodaEquipeProjeto(idProjeto);
+      //exclusão de todas as agendas da equipe do projeto
+      await excluirTodasAgendasEquipeProjeto(idProjeto);
+
       return Buffer.toArray(arrayProjeto);
   };
 
@@ -256,6 +268,11 @@ actor {
 
   };
 
+  // Método utilizado para excluir todos os itens da EAP
+  public func excluirTodosItensProjeto(idProjeto: Nat) : async () {      
+    let itemR = mapProjetosEAP.remove(idProjeto);    
+  };
+
   // Método utilizado para retornar o array completo da EAP de um projeto
   public query (msg) func getArrayItensEAP(idProjeto: Nat) : async ?[ItemEAP] {
 
@@ -321,7 +338,11 @@ actor {
             mapProjetosEquipe.put(idProjeto, arrayFilter);         
         };
       };      
+  };
 
+  // Método utilizado para excluir toda a equipe do projeto
+  public func excluirTodaEquipeProjeto(idProjeto: Nat) : async () {      
+    let equipeR = mapProjetosEquipe.remove(idProjeto);    
   };
 
   // Método utilizado para retornar o array completo da equipe de um projeto
@@ -390,6 +411,11 @@ actor {
         };
       };      
 
+  };
+
+  // Método utilizado para excluir todas as agendas da equipe do projeto
+  public func excluirTodasAgendasEquipeProjeto(idProjeto: Nat) : async () {      
+    let agendaEquipeR = mapProjetosAgendaEquipe.remove(idProjeto);    
   };
 
   

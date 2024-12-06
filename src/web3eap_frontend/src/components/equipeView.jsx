@@ -11,7 +11,7 @@ let actorWeb3EAPBackend = web3eap_backend;
 
 function equipeView() { 
   
-  const { idProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
+  const { idProjeto, nomeProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
   
   useEffect( async () => {     
 
@@ -192,15 +192,15 @@ function equipeView() {
             <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll >
               <Nav.Link  href="/">Lista de Projetos</Nav.Link>                                
               <Nav.Link>|</Nav.Link>        
-              <Nav.Link  href={'/eapLink/'+idProjeto} >EAP do Projeto</Nav.Link>                                        
+              <Nav.Link  href={'/eapLink/'+idProjeto+'/'+nomeProjeto} >EAP do Projeto</Nav.Link>                                        
               <Nav.Link>|</Nav.Link>    
-              <Nav.Link  href={'/equipeLink/'+idProjeto} >Equipe do Projeto</Nav.Link>                                        
+              <Nav.Link  href={'/equipeLink/'+idProjeto+'/'+nomeProjeto} >Equipe do Projeto</Nav.Link>                                        
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/agendaLink/'+idProjeto} >Agenda da Equipe</Nav.Link>                
+              <Nav.Link  href={'/agendaLink/'+idProjeto+'/'+nomeProjeto} >Agenda da Equipe</Nav.Link>                
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto} >Calendário da Equipe</Nav.Link>                
+              <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto+'/'+nomeProjeto} >Calendário da Equipe</Nav.Link>                
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
+              <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto+'/'+nomeProjeto} >Calendário do Projeto</Nav.Link>              
             </Nav>              
             <Button onClick={handleLogout} variant="light">Sair</Button>
           </Navbar.Collapse>
@@ -208,7 +208,7 @@ function equipeView() {
       </Navbar>
          
       <Card>
-        <Card.Body>{idProjeto} / Equipe do Projeto</Card.Body>
+        <Card.Body>{nomeProjeto} / Equipe do Projeto</Card.Body>
       </Card>      
 
       <br/>
@@ -221,23 +221,29 @@ function equipeView() {
           </thead>
 
           <tbody>
+            <tr>
+                <td>
+                    <Stack direction="horizontal" gap={0}>   
+                        <div className="p-1">
+                            <Button onClick={ () => { abrirPopupAdicionar() } } variant="outline-secondary" >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-plus">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                                <path d="M9 12h6" />
+                                <path d="M12 9v6" />
+                              </svg>
+                            </Button>
+                        </div>                      
+                    </Stack>
+                </td>
+                <td>Clique no botão + para adicionar uma nova pessoa da equipe.</td>
+                <td></td>                            
+            </tr>          
           {   
               equipe.map((linha) => 
                   <tr>
                       <td>
-                          <Stack direction="horizontal" gap={0}>   
-
-                          { (linha.cargo == '') && <div className="p-1">
-                                  <Button onClick={ () => { abrirPopupAdicionar() } } variant="outline-secondary" >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-plus">
-                                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
-                                      <path d="M9 12h6" />
-                                      <path d="M12 9v6" />
-                                    </svg>
-                                  </Button>
-                              </div>
-                          }      
+                          <Stack direction="horizontal" gap={0}>                             
 
                           { (linha.cargo != '') && <div className="p-1">
                                   <Button onClick={ () => { exibirMensagemExcluir(linha.id) } }   variant="outline-secondary" >

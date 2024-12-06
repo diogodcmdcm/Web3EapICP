@@ -12,15 +12,14 @@ function App() {
 
   return (           
     <Router>
-      <Routes>
-      
+      <Routes>      
         <Route path="/" element={<LoginView/>} />    
         <Route path="/projectLink/" element={<ProjectView/>} />    
-        <Route path="/eapLink/:idProjeto" element={<EapView/>} /> 
-        <Route path="/equipeLink/:idProjeto" element={<EquipeView/>} />    
-        <Route path="/agendaLink/:idProjeto" element={<AgendaView/>} />    
-        <Route path="/calendarioEquipeLink/:idProjeto" element={<CalendarioEquipeView/>} />                      
-        <Route path="/calendarioProjetoLink/:idProjeto" element={<CalendarioProjetoView/>} />                      
+        <Route path="/eapLink/:idProjeto/:nomeProjeto" element={<EapView/>} /> 
+        <Route path="/equipeLink/:idProjeto/:nomeProjeto" element={<EquipeView/>} />    
+        <Route path="/agendaLink/:idProjeto/:nomeProjeto" element={<AgendaView/>} />    
+        <Route path="/calendarioEquipeLink/:idProjeto/:nomeProjeto" element={<CalendarioEquipeView/>} />                      
+        <Route path="/calendarioProjetoLink/:idProjeto/:nomeProjeto" element={<CalendarioProjetoView/>} />                      
       </Routes>                  
     </Router>
 

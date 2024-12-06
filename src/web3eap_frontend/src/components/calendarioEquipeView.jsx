@@ -18,7 +18,7 @@ const localizer = momentLocalizer(moment);
 
 function calendarioEquipeView() { 
 
-  const { idProjeto } = useParams(); 
+  const { idProjeto, nomeProjeto } = useParams(); //constante utilizada para armazenar o id do projeto recebido ao abrir a página.
   
   //constantes utilizadas para configuração do componente do calendario
   const [events, setEvents] = React.useState([]);  
@@ -74,20 +74,19 @@ function calendarioEquipeView() {
           let response = await actorWeb3EAPBackend.getArrayAgendaEquipe(idP);    
           let calendarioEvents = [];
     
-          for (let i=0; i < response[0].length; i++) {
-            if(i>0){      
-              // Extrai o ano (4 primeiros caracteres)
-              const ano = response[0][i].data.substring(0, 4);  
-              // Extrai o mês (do 6º ao 7º caractere)
-              const mes = response[0][i].data.substring(5, 7);          
-              // Extrai o dia (do 9º ao 10º caractere)
-              const dia = response[0][i].data.substring(8, 10);        
-                      
-              const [horaInicio, minutoInicio] = response[0][i].horaInicio.split(":");
-              const [horaConclusao, minutoConclusao] = response[0][i].horaConclusao.split(":");
-        
-              calendarioEvents.push( {title: response[0][i].nome + ' - ' + response[0][i].atividade, start: new Date(ano, (mes-1), dia, horaInicio, minutoInicio)  , end: new Date(ano, (mes-1), dia, horaConclusao, minutoConclusao) } );
-            }      
+          for (let i=0; i < response[0].length; i++) {            
+            // Extrai o ano (4 primeiros caracteres)
+            const ano = response[0][i].data.substring(0, 4);  
+            // Extrai o mês (do 6º ao 7º caractere)
+            const mes = response[0][i].data.substring(5, 7);          
+            // Extrai o dia (do 9º ao 10º caractere)
+            const dia = response[0][i].data.substring(8, 10);        
+                    
+            const [horaInicio, minutoInicio] = response[0][i].horaInicio.split(":");
+            const [horaConclusao, minutoConclusao] = response[0][i].horaConclusao.split(":");
+      
+            calendarioEvents.push( {title: response[0][i].nome + ' - ' + response[0][i].atividade, start: new Date(ano, (mes-1), dia, horaInicio, minutoInicio)  , end: new Date(ano, (mes-1), dia, horaConclusao, minutoConclusao) } );
+          
           }
           setEvents(calendarioEvents);
         };  
@@ -121,15 +120,15 @@ function calendarioEquipeView() {
             <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll >
               <Nav.Link  href="/">Lista de Projetos</Nav.Link>                                
               <Nav.Link>|</Nav.Link>      
-              <Nav.Link  href={'/eapLink/'+idProjeto} >EAP do Projeto</Nav.Link>                                        
+              <Nav.Link  href={'/eapLink/'+idProjeto+'/'+nomeProjeto} >EAP do Projeto</Nav.Link>                                        
               <Nav.Link>|</Nav.Link>                           
-              <Nav.Link  href={'/equipeLink/'+idProjeto} >Equipe do Projeto</Nav.Link>                                        
+              <Nav.Link  href={'/equipeLink/'+idProjeto+'/'+nomeProjeto} >Equipe do Projeto</Nav.Link>                                        
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/agendaLink/'+idProjeto} >Agenda da Equipe</Nav.Link>                
+              <Nav.Link  href={'/agendaLink/'+idProjeto+'/'+nomeProjeto} >Agenda da Equipe</Nav.Link>                
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto} >Calendário da Equipe</Nav.Link>                
+              <Nav.Link  href={'/calendarioEquipeLink/'+idProjeto+'/'+nomeProjeto} >Calendário da Equipe</Nav.Link>                
               <Nav.Link>|</Nav.Link>
-              <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto} >Calendário do Projeto</Nav.Link>              
+              <Nav.Link  href={'/calendarioProjetoLink/'+idProjeto+'/'+nomeProjeto} >Calendário do Projeto</Nav.Link>              
             </Nav>              
             <Button onClick={handleLogout} variant="light">Sair</Button>
           </Navbar.Collapse>
@@ -137,7 +136,7 @@ function calendarioEquipeView() {
       </Navbar>
          
       <Card>
-        <Card.Body>{idProjeto} / Calendário da Equipe</Card.Body>
+        <Card.Body>{nomeProjeto} / Calendário da Equipe</Card.Body>
       </Card>             
 
       <br/>

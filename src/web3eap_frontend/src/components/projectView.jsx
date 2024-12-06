@@ -37,8 +37,8 @@ import moment from 'moment';
     const [mensagemAlerta, setMensagemAlerta] = useState(false);
 
     // Esta função é utilizada para direcionar para a tela que irá permitir cadastrar e manter a EAP do projeto
-    function linkEap(idProjeto){      
-      window.location.href = '/eapLink/'+idProjeto;
+    function linkEap(idProjeto, nomeProjeto){      
+      window.location.href = '/eapLink/'+idProjeto+'/'+nomeProjeto;
     }
 
     useEffect( async () => {
@@ -104,19 +104,37 @@ import moment from 'moment';
         setExibirMensagemAlerta(true);      
       } else {
 
-        setShowPopupProjeto(false);    
-        setExibeCarregando(true);    
-        // as variaveis dti e dtc são utilizadas para obter o timestamp correspondente as datas de início e fim do projeto.
-        let dti = new Date(dataInicioPopup);
-        let dtc = new Date(dataConclusaoPopup);
+        if(idProjeto!=null&&idProjeto!=''){
           
-        // chamada para função do backend responsavel por gravar os projetos
-        //await web3eap_backend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
-        await actorWeb3EAPBackend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
-        let response = await actorWeb3EAPBackend.getArrayProjetos();   
-        setProjetos(response);        
-        limparCampos();
-        setExibeCarregando(false);          
+          setShowPopupProjeto(false);    
+          setExibeCarregando(true);    
+          // as variaveis dti e dtc são utilizadas para obter o timestamp correspondente as datas de início e fim do projeto.
+          let dti = new Date(dataInicioPopup);
+          let dtc = new Date(dataConclusaoPopup);
+            
+          // chamada para função do backend responsavel por gravar os projetos
+          //await web3eap_backend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
+          await actorWeb3EAPBackend.alterarProjeto(parseInt(idProjeto), nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
+          let response = await actorWeb3EAPBackend.getArrayProjetos();   
+          setProjetos(response);        
+          limparCampos();
+          setExibeCarregando(false);          
+        } else {
+          
+          setShowPopupProjeto(false);    
+          setExibeCarregando(true);    
+          // as variaveis dti e dtc são utilizadas para obter o timestamp correspondente as datas de início e fim do projeto.
+          let dti = new Date(dataInicioPopup);
+          let dtc = new Date(dataConclusaoPopup);
+            
+          // chamada para função do backend responsavel por gravar os projetos
+          //await web3eap_backend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
+          await actorWeb3EAPBackend.cadastrarProjeto(nomeProjetoPopup, horasEstimadasPopup, dti.getTime()+'', dtc.getTime()+'', situacaoPopup);
+          let response = await actorWeb3EAPBackend.getArrayProjetos();   
+          setProjetos(response);        
+          limparCampos();
+          setExibeCarregando(false);          
+        }      
 
       }
     }   
@@ -229,7 +247,7 @@ import moment from 'moment';
                               </div>
 
                               <div className="p-1">
-                                <Button  variant="outline-secondary" onClick={ () => { linkEap(linha.id) } }>EAP</Button>
+                                <Button  variant="outline-secondary" onClick={ () => { linkEap(linha.id, linha.nomeProjeto) } }>EAP</Button>
                               </div>                              
                           </Stack>
                       </td>
@@ -252,7 +270,7 @@ import moment from 'moment';
       
       <Modal show={showPopupProjeto} backdrop="static" keyboard={false} >
           <Modal.Header closeButton>
-            <Modal.Title>Criar Projeto</Modal.Title>
+            <Modal.Title>Projeto</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>       
